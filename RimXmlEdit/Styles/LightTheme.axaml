@@ -1,0 +1,107 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+					xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml">
+
+	<ResourceDictionary.ThemeDictionaries>
+		<ResourceDictionary x:Key="Light">
+			<!-- TreeView / 列表项交互 -->
+			<!-- 悬停使用极浅的蓝灰色 -->
+			<Color x:Key="TreeViewItemHighlightColor">#E8EFF5</Color>
+			<Color x:Key="TreeViewItemHoverColor">#E8EFF5</Color>
+			<!-- 选中悬停时，保持深色背景，确保文字依然可见 -->
+			<Color x:Key="TreeViewItemSelectedHoverColor">#25628A</Color>
+
+			<!-- 应用程序背景色 -->
+			<!-- App底色：微灰，避免刺眼 -->
+			<Color x:Key="AppBackgroundColor">#F0F0F0</Color>
+			<!-- 内容层级：雪白（非纯白），提供纸张质感 -->
+			<Color x:Key="Layer1BackgroundColor">#FAFAFA</Color>
+			<Color x:Key="FloatingBackgroundColor">#F7F7F7</Color>
+
+			<!-- 控件状态颜色 -->
+			<Color x:Key="ControlBackgroundColor">#FAFAFA</Color>
+			<Color x:Key="ControlHoverBackgroundColor">#EAEAEA</Color>
+			<Color x:Key="ControlPressedBackgroundColor">#DADADA</Color>
+			<Color x:Key="ControlDisabledBackgroundColor">#F4F4F4</Color>
+
+			<!-- 文本颜色 -->
+			<!-- 主文本：深炭灰，比纯黑柔和 -->
+			<Color x:Key="TextPrimaryColor">#2E2E2E</Color>
+			<Color x:Key="TextSecondaryColor">#616161</Color>
+			<Color x:Key="TextDisabledColor">#9E9E9E</Color>
+			<!-- 强调文本/选中文字：灰白（避免 #FFFFFF 纯白） -->
+			<Color x:Key="TextOnAccentColor">#3F3DCA</Color>
+
+			<!-- 边框和分隔符 -->
+			<Color x:Key="BorderColor">#D0D0D0</Color>
+			<Color x:Key="SeparatorColor">#E0E0E0</Color>
+
+			<!-- 主题色 -->
+			<!-- AccentColor：标准的 Visual Studio 蓝 -->
+			<Color x:Key="AccentColor">#007ACC</Color>
+			<!-- 关键修改：选中背景色改为深色，以确保 TextOnAccentColor (浅色) 清晰可见 -->
+			<Color x:Key="SelectionBackgroundColor">#296E9B</Color>
+			<Color x:Key="FocusBorderColor">#007ACC</Color>
+
+			<!-- 状态颜色 (降低饱和度，不刺眼) -->
+			<Color x:Key="SuccessColor">#4EA858</Color>
+			<Color x:Key="WarningColor">#C48C00</Color>
+
+			<!-- XML编辑器特定颜色 (适配 #FAFAFA 背景) -->
+			<!-- 标签：深紫蓝 -->
+			<Color x:Key="XmlTagColor">#003399</Color>
+			<!-- 属性：深褐红 -->
+			<Color x:Key="XmlAttributeColor">#A31515</Color>
+			<!-- 值：孔雀蓝 -->
+			<Color x:Key="XmlValueColor">#006699</Color>
+			<!-- 代码选中背景：同通用选中背景，确保反白文字清晰 -->
+			<Color x:Key="XmlSelectedBackgroundColor">#296E9B</Color>
+			<Color x:Key="XmlHoverBackgroundColor">#E8EFF5</Color>
+
+			<!-- 错误相关 -->
+			<Color x:Key="ErrorBackgroundColor">#20FF0000</Color>
+			<Color x:Key="ErrorColor">#D13438</Color>
+
+			<!-- SolidColorBrush 资源 -->
+			<SolidColorBrush x:Key="AppBackgroundBrush" Color="{StaticResource AppBackgroundColor}" />
+			<SolidColorBrush x:Key="Layer1BackgroundBrush" Color="{StaticResource Layer1BackgroundColor}" />
+			<SolidColorBrush x:Key="FloatingBackgroundBrush"
+							 Color="{StaticResource FloatingBackgroundColor}" />
+
+			<SolidColorBrush x:Key="ControlBackgroundBrush" Color="{StaticResource ControlBackgroundColor}" />
+			<SolidColorBrush x:Key="ControlHoverBackgroundBrush"
+							 Color="{StaticResource ControlHoverBackgroundColor}" />
+			<SolidColorBrush x:Key="ControlPressedBackgroundBrush"
+							 Color="{StaticResource ControlPressedBackgroundColor}" />
+			<SolidColorBrush x:Key="ControlDisabledBackgroundBrush"
+							 Color="{StaticResource ControlDisabledBackgroundColor}" />
+
+			<SolidColorBrush x:Key="TextPrimaryBrush" Color="{StaticResource TextPrimaryColor}" />
+			<SolidColorBrush x:Key="TextSecondaryBrush" Color="{StaticResource TextSecondaryColor}" />
+			<SolidColorBrush x:Key="TextDisabledBrush" Color="{StaticResource TextDisabledColor}" />
+			<SolidColorBrush x:Key="TextOnAccentBrush" Color="{StaticResource TextOnAccentColor}" />
+
+			<SolidColorBrush x:Key="BorderBrush" Color="{StaticResource BorderColor}" />
+			<SolidColorBrush x:Key="SeparatorBrush" Color="{StaticResource SeparatorColor}" />
+
+			<SolidColorBrush x:Key="AccentBrush" Color="{StaticResource AccentColor}" />
+			<SolidColorBrush x:Key="SelectionBackgroundBrush"
+							 Color="{StaticResource SelectionBackgroundColor}" />
+			<SolidColorBrush x:Key="FocusBorderBrush" Color="{StaticResource FocusBorderColor}" />
+
+			<SolidColorBrush x:Key="SuccessBrush" Color="{StaticResource SuccessColor}" />
+			<SolidColorBrush x:Key="WarningBrush" Color="{StaticResource WarningColor}" />
+
+			<SolidColorBrush x:Key="XmlTagBrush" Color="{StaticResource XmlTagColor}" />
+			<SolidColorBrush x:Key="XmlAttributeBrush" Color="{StaticResource XmlAttributeColor}" />
+			<SolidColorBrush x:Key="XmlValueBrush" Color="{StaticResource XmlValueColor}" />
+			<SolidColorBrush x:Key="XmlSelectedBackgroundBrush"
+							 Color="{StaticResource XmlSelectedBackgroundColor}" />
+			<SolidColorBrush x:Key="XmlHoverBackgroundBrush"
+							 Color="{StaticResource XmlHoverBackgroundColor}" />
+
+			<SolidColorBrush x:Key="ErrorBackgroundBrush" Color="{StaticResource ErrorBackgroundColor}" />
+			<SolidColorBrush x:Key="ErrorBrush" Color="{StaticResource ErrorColor}" />
+		</ResourceDictionary>
+	</ResourceDictionary.ThemeDictionaries>
+
+</ResourceDictionary>

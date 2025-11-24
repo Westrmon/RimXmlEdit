@@ -1,0 +1,44 @@
+using Avalonia;
+using Avalonia.Controls;
+using Avalonia.Controls.ApplicationLifetimes;
+using Avalonia.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.Logging;
+using RimXmlEdit.Core.Extensions;
+using RimXmlEdit.Utils;
+using RimXmlEdit.ViewModels;
+using RimXmlEdit.Views;
+using System;
+
+namespace RimXmlEdit;
+
+public partial class InitWindow : Window
+{
+    public InitWindow()
+    {
+        InitializeComponent();
+        WeakReferenceMessenger.Default.Register<CloseWindowMessage>(this, (_, m) =>
+        {
+            if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
+            {
+                var window = GlobalSingletonHelper.Service.GetRequiredService<MainWindow>();
+                window.DataContext = GlobalSingletonHelper.Service.GetRequiredService<MainViewModel>();
+                desktop.MainWindow = window;
+                var topLevel = GetTopLevel(window);
+                GlobalSingletonHelper.StorageProvider = topLevel.StorageProvider;
+                window.Show();
+            }
+            Close();
+        });
+
+        Sidebar.DataContext = GlobalSingletonHelper.Service.GetRequiredService<SidebarViewModel>();
+    }
+
+    protected override void OnPointerPressed(PointerPressedEventArgs e)
+    {
+        base.OnPointerPressed(e);
+        if (e.GetPosition(this).Y < 30)
+            this.BeginMoveDrag(e);
+    }
+}

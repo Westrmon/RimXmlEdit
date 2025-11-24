@@ -1,0 +1,49 @@
+<Styles xmlns="https://github.com/avaloniaui"
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:views="using:RimXmlEdit.Views"
+        xmlns:m="using:RimXmlEdit.Models"
+        xmlns:vm="using:RimXmlEdit.ViewModels"
+        xmlns:ut="using:RimXmlEdit.Utils">
+  <Design.PreviewWith>
+    <Border Padding="20">
+      <!-- Add Controls for Previewer Here -->
+    </Border>
+  </Design.PreviewWith>
+
+  <!-- Add Styles Here -->
+  <Style Selector="views|QuickSearchBox">
+    <Setter Property="Template">
+      <ControlTemplate x:DataType="vm:QuickSearchBoxViewModel">
+        <!-- DataContext 继承自 QuickSearchBox 控件本身 -->
+        <Grid>
+          <TextBox Name="PART_SearchTextBox"
+                   Text="{Binding SearchText, Mode=TwoWay}"
+                   Watermark="Search..." />
+          
+          <Popup Name="PART_Popup"
+                 IsOpen="{Binding IsPopupOpen}"
+                 IsLightDismissEnabled="True"
+                 PlacementTarget="{TemplateBinding}"
+                 PlacementMode="Bottom"
+                 MinWidth="{Binding #PART_SearchTextBox.Bounds.Width}">
+            <Border Background="{DynamicResource ThemeControlMidBrush}"
+                    BorderBrush="{DynamicResource ThemeBorderLowBrush}"
+                    BorderThickness="1"
+                    CornerRadius="3"
+                    MaxHeight="300">
+              <ListBox Name="PART_ResultsListBox"
+                       ItemsSource="{Binding FilteredResults}"
+                       SelectedItem="{Binding SelectedItem, Mode=TwoWay}">
+                <ListBox.ItemTemplate>
+                  <DataTemplate x:DataType="m:SearchResultItem">
+                    <TextBlock ut:TextBlockHelper.Inlines="{Binding FormattedText}" />
+                  </DataTemplate>
+                </ListBox.ItemTemplate>
+              </ListBox>
+            </Border>
+          </Popup>
+        </Grid>
+      </ControlTemplate>
+    </Setter>
+  </Style>
+</Styles>

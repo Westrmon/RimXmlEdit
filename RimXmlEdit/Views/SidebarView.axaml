@@ -1,0 +1,81 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:vm="using:RimXmlEdit.ViewModels"
+			 xmlns:model="using:RimXmlEdit.Models"
+			 xmlns:conv="using:RimXmlEdit.Converter"
+			 mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+			 x:Class="RimXmlEdit.SidebarView"
+			 x:DataType="vm:SidebarViewModel">
+	<UserControl.Styles>
+		<!-- Style for the navigation ListBox items -->
+		<Style Selector="ListBoxItem">
+			<Setter Property="Padding" Value="12,10" />
+			<Setter Property="Margin" Value="0,2" />
+			<Setter Property="CornerRadius" Value="8,0,0,8" />
+			<Setter Property="Background" Value="{DynamicResource AppBackgroundColor}" />
+			<Setter Property="Template">
+				<ControlTemplate>
+					<Border Name="PART_RootBorder"
+							Padding="{TemplateBinding Padding}"
+							Background="{TemplateBinding Background}"
+							BorderBrush="{TemplateBinding BorderBrush}"
+							BorderThickness="{TemplateBinding BorderThickness}"
+							CornerRadius="{TemplateBinding CornerRadius}">
+						<ContentPresenter Content="{TemplateBinding Content}"
+										  ContentTemplate="{TemplateBinding ContentTemplate}"
+										  HorizontalContentAlignment="{TemplateBinding HorizontalContentAlignment}"
+										  VerticalContentAlignment="{TemplateBinding VerticalContentAlignment}" />
+					</Border>
+				</ControlTemplate>
+			</Setter>
+		</Style>
+		<Style Selector="ListBoxItem:selected TextBlock">
+			<Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}" />
+			<Setter Property="FontWeight" Value="Bold" />
+		</Style>
+		<Style Selector="ListBoxItem:selected /template/ Border#PART_RootBorder">
+			<Setter Property="Background" Value="{DynamicResource ControlHoverBackgroundColor}" />
+			<Setter Property="BorderBrush" Value="{DynamicResource FocusBorderBrush}" />
+		</Style>
+	</UserControl.Styles>
+
+	<Grid Margin="0,20,0,0" Grid.RowDefinitions="Auto,*, 50, 20">
+
+		<!-- Header Section -->
+		<StackPanel Grid.Row="0"
+					Margin="22,15,20,20"
+					Spacing="6">
+			<TextBlock Text="RimXmlEdit"
+					   Foreground="{DynamicResource TextPrimaryBrush}"
+					   Classes="h1"
+					   FontSize="22"
+					   FontWeight="SemiBold" />
+			<TextBlock Text="{DynamicResource App_SubTitle}"
+					   Classes="h3"
+					   Foreground="{DynamicResource TextSecondaryBrush}" />
+		</StackPanel>
+		
+		<!-- Navigation List -->
+		<ListBox ItemsSource="{Binding Items}" Grid.Row="1"
+				 SelectedItem="{Binding SelectedItem, Mode=TwoWay}"
+				 Background="Transparent" Margin="0,20,0,0"
+				 BorderThickness="0">
+			<ListBox.ItemTemplate>
+				<DataTemplate x:DataType="model:SidebarItem">
+					<TextBlock Text="{Binding NameKey, Converter={x:Static conv:ResourceKeyToValueConverter.Instance}}"
+							   Background="Transparent"
+							   FontSize="14"/>
+				</DataTemplate>
+			</ListBox.ItemTemplate>
+		</ListBox>
+		<Button Grid.Row="2" Content="{DynamicResource App_SelectGameRoot}"
+				IsVisible="{Binding !IsInitGamePath}" HorizontalAlignment="Stretch"
+				Foreground="Red" Background="Transparent"
+			    Command="{Binding SelectGameRootPathCommand}" />
+		<TextBlock Text="{Binding Version}" Classes="h3" Grid.Row="3"
+				   Margin="10,5,0,0"
+				   Foreground="{DynamicResource TextSecondaryBrush}"/>
+	</Grid>
+</UserControl>

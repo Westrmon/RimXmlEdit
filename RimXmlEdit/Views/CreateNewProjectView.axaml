@@ -1,0 +1,184 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    xmlns:vm="using:RimXmlEdit.ViewModels"
+    xmlns:models="using:RimXmlEdit.Models"
+    mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="600"
+    x:Class="RimXmlEdit.CreateNewProjectView"
+    x:DataType="vm:CreateNewProjectViewModel">
+
+    <ScrollViewer ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+        <StackPanel Margin="10,0,20,0">
+            <TextBlock Text="{DynamicResource CreateNewProject_Title}"
+                Foreground="{DynamicResource TextPrimaryBrush}"
+                FontWeight="Bold"
+                FontSize="20"
+                Classes="h1" />
+            <Separator Margin="0,10,0,0" />
+            <Grid ColumnDefinitions="Auto,*,Auto" RowDefinitions="Auto,Auto,Auto,Auto,Auto,Auto"
+                Margin="0,5,0,0" RowSpacing="5">
+                <TextBlock Grid.Row="0" Grid.Column="0" Text="{DynamicResource CreateNewProject_AuthorNameLabel}" VerticalAlignment="Center"
+                           Margin="0,0,10,0" />
+                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Author}" Watermark="{DynamicResource CreateNewProject_InputAuthorNameLabel}" />
+
+                <TextBlock Grid.Row="1" Grid.Column="0" Text="Project Name"
+                    VerticalAlignment="Center" Margin="0,0,10,0" />
+                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding ProjectName}"
+                    Watermark="{DynamicResource CreateNewProject_InputProjectNameLabel}" />
+
+                <TextBlock Grid.Row="2" Grid.Column="0" Text="{DynamicResource CreateNewProject_PackageIdLabel}" VerticalAlignment="Center"
+                    Margin="0,10,0,0" />
+                <TextBlock Grid.Row="2" Grid.Column="1" Text="{Binding PackageId}" FontWeight="Bold"
+                    Margin="0,10,0,0" VerticalAlignment="Center" />
+
+                <TextBlock Grid.Row="3" Grid.Column="0" Margin="0,0,10,0"
+                    Text="{DynamicResource CreateNewProject_ProjectLocationLabel}"
+                    VerticalAlignment="Center" />
+                <Grid Grid.Row="3" Grid.Column="1"
+                    ColumnDefinitions="*,Auto" ColumnSpacing="4">
+					<TextBox Grid.Column="0" MinHeight="32" Height="32"
+                        Text="{Binding ProjectLocation, Mode=TwoWay}"
+                        Foreground="{DynamicResource TextSecondaryBrush}"
+                        AutomationProperties.Name="{DynamicResource CreateNewProject_ProjectLocationLabel}" />
+                    <Button Grid.Column="1"
+                        VerticalAlignment="Stretch"
+                        Content="{DynamicResource CreateNewProject_BrowseButton}"
+                        Command="{Binding BrowseLocationCommand}" />
+                </Grid>
+
+                <TextBlock Grid.Row="4" Grid.Column="0"
+						   Text="{DynamicResource CreateNewProject_ProjectDescription}"
+						   VerticalAlignment="Top" Margin="0,5,0,0"/>
+				<TextBox Grid.Row="4" Grid.Column="1" Height="100" MaxHeight="150"
+						 Text="{Binding ProjectDescription, Mode=TwoWay}"
+						 Foreground="{DynamicResource TextSecondaryBrush}"
+						 AutomationProperties.Name="{DynamicResource CreateNewProject_ProjectDescription}"
+						 AcceptsReturn="True" TextWrapping="Wrap" />
+                <TextBlock Grid.Row="5" Grid.Column="0"
+						   Text="{DynamicResource CreateNewProject_SelectTemplatePlaceholder}"
+						   VerticalAlignment="Center" />
+                <ComboBox Grid.Row="5" Grid.Column="1"
+						  ItemsSource="{Binding Templates}"
+						  SelectedItem="{Binding SelectedTemplate, Mode=TwoWay}"
+						  HorizontalAlignment="Stretch" IsEnabled="True"
+						  Focusable="True">
+					<ComboBox.ItemTemplate>
+						<DataTemplate>
+							<TextBlock Text="{Binding Name}" />
+						</DataTemplate>
+					</ComboBox.ItemTemplate>
+				</ComboBox>
+            </Grid>
+
+            <TextBlock Text="{DynamicResource CreateNewProject_ProjectVersionLabel}" Classes="h2" Margin="0,15,0,0" />
+            <ItemsControl ItemsSource="{Binding GameVersions}">
+                <ItemsControl.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <WrapPanel Orientation="Horizontal" />
+                    </ItemsPanelTemplate>
+                </ItemsControl.ItemsPanel>
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="models:GameVersionCheckItem">
+                        <CheckBox Content="{Binding DisplayName}"
+                            IsChecked="{Binding IsSelected}"
+                            Margin="0,0,15,5" />
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+
+            <Separator Margin="0,10,0,0" />
+
+            <TextBlock Text="{DynamicResource CreateNewProject_ModDependenciesLabel}" Classes="h2" Margin="0,15,0,5" />
+            <ItemsControl ItemsSource="{Binding ModDependencies}">
+                <ItemsControl.ItemTemplate>
+                    <DataTemplate x:DataType="models:ModDependency">
+                        <Border BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Padding="10"
+                            Margin="0,0,0,10">
+                            <Grid RowDefinitions="Auto,Auto,Auto,Auto"
+                                ColumnDefinitions="Auto,*,Auto" RowSpacing="3">
+                                <TextBlock Grid.Row="0" Grid.Column="0" Text="PackageId:"
+                                    VerticalAlignment="Center" HorizontalAlignment="Right" />
+                                <TextBox Grid.Row="0" Grid.Column="1" Text="{Binding PackageId}"
+                                    Watermark="例如：ludeon.rimworld" Margin="5,0,0,0" />
+                                <Button Grid.Row="0" Grid.Column="2" Grid.RowSpan="4"
+                                    Content="移除" Margin="10,5,0,5"
+                                    Command="{Binding $parent[ItemsControl].DataContext.RemoveDependencyCommand}"
+                                    CommandParameter="{Binding}" />
+
+                                <TextBlock Grid.Row="1" Grid.Column="0" Text="DisplayName:"
+                                    VerticalAlignment="Center" HorizontalAlignment="Right" />
+                                <TextBox Grid.Row="1" Grid.Column="1" Text="{Binding DisplayName}"
+                                    Watermark="例如：Core" Margin="5,0,0,0" />
+
+                                <TextBlock Grid.Row="2" Grid.Column="0" Text="Steam URL:"
+                                    VerticalAlignment="Center" HorizontalAlignment="Right" />
+                                <TextBox Grid.Row="2" Grid.Column="1"
+                                    Text="{Binding SteamWorkshopUrl}" Watermark="Steam创意工坊链接"
+                                    Margin="5,0,0,0" />
+
+                                <TextBlock Grid.Row="3" Grid.Column="0" Text="Download URL:"
+                                    VerticalAlignment="Center" HorizontalAlignment="Right" />
+                                <TextBox Grid.Row="3" Grid.Column="1" Text="{Binding DownloadUrl}"
+                                    Watermark="其他下载链接" Margin="5,0,0,0" />
+                            </Grid>
+                        </Border>
+                    </DataTemplate>
+                </ItemsControl.ItemTemplate>
+            </ItemsControl>
+            <Button Content="{DynamicResource CreateNewProject_AddDependencyLabel}" HorizontalAlignment="Left"
+                Command="{Binding AddDependencyCommand}" />
+
+            <TextBlock Text="{DynamicResource CreateNewProject_LoadLabel}" Classes="h2" Margin="0,15,0,8" />
+            <Grid ColumnDefinitions="1*,1*" ColumnSpacing="15">
+                <StackPanel Grid.Column="0">
+                    <TextBlock Text="{DynamicResource CreateNewProject_LoadAfterListLabel}" Classes="h3" />
+                    <ItemsControl ItemsSource="{Binding LoadAfterList}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                                    <TextBox Text="{Binding}" Watermark="输入 packageId" />
+                                    <Button Content="-" Grid.Column="1" Margin="5,0,0,0"
+                                        Command="{Binding $parent[ItemsControl].DataContext.RemoveLoadAfterCommand}"
+                                        CommandParameter="{Binding}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Content="{DynamicResource CreateNewProject_AddLabel}" HorizontalAlignment="Left" Margin="0,5,0,0"
+                        Command="{Binding AddLoadAfterCommand}" />
+                </StackPanel>
+
+                <StackPanel Grid.Column="1">
+                    <TextBlock Text="{DynamicResource CreateNewProject_LoadBeforeListLabel}" Classes="h3" />
+                    <ItemsControl ItemsSource="{Binding LoadBeforeList}">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Grid ColumnDefinitions="*,Auto" Margin="0,2">
+                                    <TextBox Text="{Binding}" Watermark="输入 packageId" />
+                                    <Button Content="-" Grid.Column="1" Margin="5,0,0,0"
+                                        Command="{Binding $parent[ItemsControl].DataContext.RemoveLoadBeforeCommand}"
+                                        CommandParameter="{Binding}" />
+                                </Grid>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                    <Button Content="{DynamicResource CreateNewProject_AddLabel}" HorizontalAlignment="Left" Margin="0,5,0,0"
+                        Command="{Binding AddLoadBeforeCommand}" />
+                </StackPanel>
+            </Grid>
+
+            <TextBlock Text="Mod 图标路径" Classes="h2" Margin="0,15,0,8" />
+            <Grid ColumnDefinitions="*,Auto"  ColumnSpacing="4">
+                <TextBox Grid.Column="0" Text="{Binding ModIconPath}" Watermark="选择图标文件路径..." MinHeight="32" Height="32" />
+                <Button Grid.Column="1" Content="{DynamicResource CreateNewProject_BrowseButton}" Command="{Binding BrowseIconCommand}" />
+            </Grid>
+            <Border Background="Transparent" Height="100">
+				<Button Content="{DynamicResource CreateNewProject_CreateButton}"
+                        Command="{Binding CreateProjectCommand}"
+				        Classes="accent" Margin="0,20,20,30"
+				        HorizontalAlignment="Right" VerticalAlignment="Bottom" />
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</UserControl>

@@ -1,0 +1,62 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="using:System">
+    <!-- General -->
+    <system:String x:Key="App_SubTitle">XML Mod Editor</system:String>
+    <system:String x:Key="App_SelectGameRoot">Please set the game root directory first</system:String>
+
+    <!-- Main Window -->
+    <system:String x:Key="MainView_ChildListInputLabel">Child Node List</system:String>
+    <system:String x:Key="MainView_ChildListSearchWatermark">Search children...</system:String>
+    <system:String x:Key="MainView_TexturePreviewLabel">Texture Preview</system:String>
+    <system:String x:Key="MainView_EditNodeTab">Edit Node</system:String>
+    <system:String x:Key="MainView_XMLSourceFileTab">XML Source File</system:String>
+	<system:String x:Key="MainView_Menu_File">File</system:String>
+	<system:String x:Key="MainView_Menu_ImportXML">Import XML...</system:String>
+	<system:String x:Key="MainView_Menu_ImportDLL">Import DLL...</system:String>
+	<system:String x:Key="MainView_Menu_Exit">Exit</system:String>
+	<system:String x:Key="MainView_Menu_Setting">Settings</system:String>
+	<system:String x:Key="MainView_Menu_About">About</system:String>
+	<system:String x:Key="MainView_FileExplorerTitle">File Explorer</system:String>
+
+    <system:String x:Key="TexturePreviewView_DragDropHint">Drag image here / No layers available</system:String>
+
+    <!-- Sidebar Navigation -->
+    <system:String x:Key="Sidebar_RecentProjects">Recent Projects</system:String>
+    <system:String x:Key="Sidebar_CreateNewProject">Create New Project</system:String>
+    <system:String x:Key="Sidebar_OpenProjectFromFolder">Open Project</system:String>
+
+    <!-- "Recent Projects" View -->
+    <system:String x:Key="RecentProjects_Title">Recent Projects</system:String>
+    <system:String x:Key="RecentProjects_SearchWatermark">Search mods...</system:String>
+
+    <!-- "Create New Project" View -->
+    <system:String x:Key="CreateNewProject_Title">Create New Project</system:String>
+    <system:String x:Key="CreateNewProject_ProjectNameLabel">Mod Name</system:String>
+    <system:String x:Key="CreateNewProject_ProjectNameWatermark">e.g., MyAwesomeMod</system:String>
+    <system:String x:Key="CreateNewProject_ProjectLocationLabel">Project Location</system:String>
+    <system:String x:Key="CreateNewProject_ProjectDescription">Mod Description</system:String>
+    <system:String x:Key="CreateNewProject_BrowseButton">Browse...</system:String>
+    <system:String x:Key="CreateNewProject_ProjectTemplateLabel">Mod Template</system:String>
+    <system:String x:Key="CreateNewProject_SelectTemplatePlaceholder">Please select a template...</system:String>
+    <system:String x:Key="CreateNewProject_InputAuthorNameLabel">Please enter author name(s). Separate multiple authors with commas.</system:String>
+    <system:String x:Key="CreateNewProject_InputProjectNameLabel">Please enter a project name</system:String>
+    <system:String x:Key="CreateNewProject_AuthorNameLabel">Author(s)</system:String>
+    <system:String x:Key="CreateNewProject_PackageIdLabel">Mod Id</system:String>
+    <system:String x:Key="CreateNewProject_ProjectVersionLabel">Supported Game Version(s) (Multiple Selection Allowed)</system:String>
+    <system:String x:Key="CreateNewProject_ModDependenciesLabel">Mod Dependencies (Optional)</system:String>
+    <system:String x:Key="CreateNewProject_LoadBeforeListLabel">Load Before These Mods (LoadBefore)</system:String>
+    <system:String x:Key="CreateNewProject_LoadAfterListLabel">Load After These Mods (LoadAfter)</system:String>
+    <system:String x:Key="CreateNewProject_AddLabel">Add</system:String>
+    <system:String x:Key="CreateNewProject_AddDependencyLabel">Add Dependency</system:String>
+    <system:String x:Key="CreateNewProject_AddDllDependencyLabel">Add Dll Dependency</system:String>
+    <system:String x:Key="CreateNewProject_LoadLabel">Load Order (Optional)</system:String>
+    <system:String x:Key="CreateNewProject_CreateButton">Create</system:String>
+    <system:String x:Key="SettingsView_GeneralSettings">General Settings</system:String>
+	<system:String x:Key="SettingsView_CancelButton">Cancel</system:String>
+	<system:String x:Key="SettingsView_Save">Save Settings</system:String>
+	
+    <system:String x:Key="MsEmbeddedView_SetFileName">Set File Name</system:String>
+    <system:String x:Key="MsEmbeddedView_IsFolder">Is Folder</system:String>
+    
+</ResourceDictionary>

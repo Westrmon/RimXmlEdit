@@ -1,0 +1,265 @@
+<Window xmlns="https://github.com/avaloniaui"
+		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+		xmlns:vm="using:RimXmlEdit.ViewModels"
+		xmlns:m="using:RimXmlEdit.Models"
+		x:Class="RimXmlEdit.SettingsView"
+		x:DataType="vm:SettingsViewModel"
+		ExtendClientAreaChromeHints="NoChrome"
+		ExtendClientAreaTitleBarHeightHint="35"
+		ExtendClientAreaToDecorationsHint="True"
+		WindowStartupLocation="CenterOwner"
+		Height="480" Width="800" CanResize="False">
+	<Grid ColumnDefinitions="150,*"
+		  RowDefinitions="32 *" Background="{DynamicResource AppBackgroundColor}">
+		<Button Grid.RowSpan="2" Grid.Column="1" Margin="0,5,5,0"
+				VerticalAlignment="Top" HorizontalAlignment="Right"
+				Foreground="{DynamicResource AccentBrush}"
+				Background="Transparent" ZIndex="1"
+				Width="25" Height="25"
+				Command="{Binding CloseCommand}">
+			<PathIcon Data="M512 466.944l233.472-233.472a31.744 31.744 0 0 1 45.056 45.056L557.056 512l233.472 233.472a31.744 31.744 0 0 1-45.056 45.056L512 557.056l-233.472 233.472a31.744 31.744 0 0 1-45.056-45.056L466.944 512 233.472 278.528a31.744 31.744 0 0 1 45.056-45.056z"
+					  Width="16"/>
+		</Button>
+		<!-- 左侧：快速导航侧边栏 -->
+		<Border Grid.Column="0" Grid.RowSpan="2" Background="{DynamicResource Layer1BackgroundColor}" Padding="0,25,0,0"
+				BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,0,1,0">
+			<StackPanel Margin="0,20,0,0">
+				<TextBlock Text="设置导航"
+						   Margin="20,0,0,15"
+						   FontWeight="Bold"
+						   FontSize="16"
+						   Foreground="{DynamicResource TextPrimaryBrush}"/>
+
+				<ListBox ItemsSource="{Binding NavigationItems}"
+						 SelectedItem="{Binding SelectedNavigationItem, Mode=TwoWay}"
+						 SelectionChanged="OnNavigationSelectionChanged"
+						 Background="Transparent">
+					<ListBox.Styles>
+						<!-- 简单的列表项样式 -->
+						<Style Selector="ListBoxItem">
+							<Setter Property="Padding" Value="20,10"/>
+							<Setter Property="Cursor" Value="Hand"/>
+						</Style>
+					</ListBox.Styles>
+					<ListBox.ItemTemplate>
+						<DataTemplate>
+							<TextBlock Text="{Binding Title}" FontWeight="Medium"/>
+						</DataTemplate>
+					</ListBox.ItemTemplate>
+				</ListBox>
+			</StackPanel>
+		</Border>
+
+		<!-- 右侧：主要设置内容 (流式布局) -->
+		<ScrollViewer Grid.Row="1" Grid.Column="1" Name="MainScrollViewer" Padding="30,20,30,40"
+					  ScrollViewer.HorizontalScrollBarVisibility="Disabled">
+			<StackPanel Spacing="0">
+				<TextBlock Name="Section_MetaData" Text="项目信息" Classes="h2" Margin="0,0,0,15"/>
+				<ItemsControl ItemsSource="{Binding MetaDataSettings}" Width="588">
+					<ItemsControl.ItemTemplate>
+						<DataTemplate DataType="m:TextSettingItem">
+							<Grid ColumnDefinitions="120,*" Margin="0,0,0,15">
+								<TextBlock Text="{Binding Label}" VerticalAlignment="{Binding IsMultiline, Converter={x:Static ObjectConverters.IsNull}, ConverterParameter=Top}" Margin="0,6,0,0" FontWeight="Medium"/>
+								<Panel Grid.Column="1">
+									<TextBox Text="{Binding Value.Value, Mode=TwoWay}" Watermark="{Binding Watermark}"
+											 IsVisible="{Binding !IsMultiline}"/>
+									<TextBox Text="{Binding Value.Value, Mode=TwoWay}" Watermark="{Binding Watermark}"
+											 IsVisible="{Binding IsMultiline}"
+											 AcceptsReturn="True" TextWrapping="WrapWithOverflow" Height="80"/>
+								</Panel>
+							</Grid>
+						</DataTemplate>
+					</ItemsControl.ItemTemplate>
+				</ItemsControl>
+
+				<Separator Margin="0,20,0,20"/>
+
+				<!-- SECTION 3: Mod 依赖 (复杂交互，保持手动布局) -->
+				<TextBlock Name="Section_Dependencies" Text="{DynamicResource CreateNewProject_ModDependenciesLabel}" Classes="h2" Margin="0,0,0,15"/>
+				<ItemsControl ItemsSource="{Binding ModDependencies}">
+					<ItemsControl.ItemTemplate>
+						<DataTemplate x:DataType="m:ModDependency">
+							<Border BorderBrush="Gray" BorderThickness="1" CornerRadius="5" Padding="10"
+									Margin="0,0,0,10">
+								<Grid RowDefinitions="Auto,Auto,Auto,Auto"
+									  ColumnDefinitions="Auto,*,Auto" RowSpacing="3">
+									<TextBlock Grid.Row="0" Grid.Column="0" Text="PackageId:"
+											   VerticalAlignment="Center" HorizontalAlignment="Right" />
+									<TextBox Grid.Row="0" Grid.Column="1" Text="{Binding PackageId, Mode=TwoWay}"
+											 Watermark="例如：ludeon.rimworld" Margin="5,0,0,0" />
+									<Button Grid.Row="0" Grid.Column="2" Grid.RowSpan="4"
+											Content="移除" Margin="10,5,0,5"
+											Command="{Binding $parent[ItemsControl].DataContext.RemoveDependencyCommand}"
+											CommandParameter="{Binding}" />
+
+									<TextBlock Grid.Row="1" Grid.Column="0" Text="DisplayName:"
+											   VerticalAlignment="Center" HorizontalAlignment="Right" />
+									<TextBox Grid.Row="1" Grid.Column="1" Text="{Binding DisplayName, Mode=TwoWay}"
+											 Watermark="例如：Core" Margin="5,0,0,0" />
+
+									<TextBlock Grid.Row="2" Grid.Column="0" Text="Steam URL:"
+											   VerticalAlignment="Center" HorizontalAlignment="Right" />
+									<TextBox Grid.Row="2" Grid.Column="1"
+											 Text="{Binding SteamWorkshopUrl, Mode=TwoWay}" Watermark="Steam创意工坊链接"
+											 Margin="5,0,0,0" />
+
+									<TextBlock Grid.Row="3" Grid.Column="0" Text="Download URL:"
+											   VerticalAlignment="Center" HorizontalAlignment="Right" />
+									<TextBox Grid.Row="3" Grid.Column="1" Text="{Binding DownloadUrl, Mode=TwoWay}"
+											 Watermark="其他下载链接" Margin="5,0,0,0" />
+								</Grid>
+							</Border>
+						</DataTemplate>
+					</ItemsControl.ItemTemplate>
+				</ItemsControl>
+				<Button Content="{DynamicResource CreateNewProject_AddDependencyLabel}" HorizontalAlignment="Stretch"
+						Command="{Binding AddDependencyCommand}" />
+				<Separator Margin="0,20,0,20"/>
+
+				<StackPanel Margin="0,0,0,10">
+					<TextBlock Text="{DynamicResource CreateNewProject_AddDllDependencyLabel}" Classes="h3" />
+					<ItemsControl ItemsSource="{Binding DllDependencies}">
+						<ItemsControl.ItemTemplate>
+							<DataTemplate>
+								<Grid ColumnDefinitions="*,Auto" Margin="0,2">
+									<Grid ColumnDefinitions="*,Auto">
+										<TextBox Grid.Column="0" Height="30" Text="{Binding Value, Mode=TwoWay}" Watermark="Path to dll" />
+										<Button Grid.Column="1" Padding="5" Content="..." Command="{Binding $parent[ItemsControl].DataContext.ImportDllCommand}"
+															  CommandParameter="{Binding}"/>
+									</Grid>
+									<Button Content="-" Grid.Column="1" Margin="5,0,0,0" Padding="10,5"
+											Command="{Binding $parent[ItemsControl].DataContext.RemoveDllDependencyCommand}"
+											CommandParameter="{Binding}" />
+								</Grid>
+							</DataTemplate>
+						</ItemsControl.ItemTemplate>
+					</ItemsControl>
+					<Button Content="{DynamicResource CreateNewProject_AddLabel}" HorizontalAlignment="Left" Margin="0,5,0,0"
+							Command="{Binding AddDllDependencyCommand}" />
+				</StackPanel>
+
+				<!-- SECTION 4: 加载顺序 -->
+				<TextBlock Name="Section_LoadOrder" Text="{DynamicResource CreateNewProject_LoadLabel}" Classes="h2" Margin="0,0,0,15"/>
+				<Grid ColumnDefinitions="*,*" ColumnSpacing="20">
+					<StackPanel Grid.Column="0">
+						<TextBlock Text="{DynamicResource CreateNewProject_LoadBeforeListLabel}" Classes="h3" />
+						<ItemsControl ItemsSource="{Binding LoadAfterList}">
+							<ItemsControl.ItemTemplate>
+								<DataTemplate>
+									<Grid ColumnDefinitions="*,Auto" Margin="0,2">
+										<TextBox Text="{Binding, Mode=TwoWay}" Watermark="Input packageId" />
+										<Button Content="-" Grid.Column="1" Margin="5,0,0,0"
+												Command="{Binding $parent[ItemsControl].DataContext.RemoveLoadAfterCommand}"
+												CommandParameter="{Binding}" />
+									</Grid>
+								</DataTemplate>
+							</ItemsControl.ItemTemplate>
+						</ItemsControl>
+						<Button Content="{DynamicResource CreateNewProject_AddLabel}" HorizontalAlignment="Left" Margin="0,5,0,0"
+								Command="{Binding AddLoadAfterCommand}" />
+					</StackPanel>
+
+					<StackPanel Grid.Column="1">
+						<TextBlock Text="{DynamicResource CreateNewProject_LoadBeforeListLabel}" Classes="h3" />
+						<ItemsControl ItemsSource="{Binding LoadBeforeList}">
+							<ItemsControl.ItemTemplate>
+								<DataTemplate>
+									<Grid ColumnDefinitions="*,Auto" Margin="0,2">
+										<TextBox Text="{Binding, Mode=TwoWay}" Watermark="Input packageId" />
+										<Button Content="-" Grid.Column="1" Margin="5,0,0,0"
+												Command="{Binding $parent[ItemsControl].DataContext.RemoveLoadBeforeCommand}"
+												CommandParameter="{Binding}" />
+									</Grid>
+								</DataTemplate>
+							</ItemsControl.ItemTemplate>
+						</ItemsControl>
+						<Button Content="{DynamicResource CreateNewProject_AddLabel}" HorizontalAlignment="Left" Margin="0,5,0,0"
+								Command="{Binding AddLoadBeforeCommand}" />
+					</StackPanel>
+				</Grid>
+
+				<Separator Margin="0,10,0,20"/>
+
+				<!-- SECTION 1: 通用设置 (动态生成) -->
+				<TextBlock Name="Section_General" Text="{DynamicResource SettingsView_GeneralSettings}" Classes="h1" Margin="0,10,0,15"/>
+				<ItemsControl ItemsSource="{Binding GeneralSettings}">
+					<ItemsControl.ItemTemplate>
+						<!-- 使用 DataTemplate 选择器 (Avalonia根据DataType自动匹配) -->
+						<DataTemplate>
+							<ContentControl Content="{Binding}">
+								<ContentControl.DataTemplates>
+
+									<!-- Bool 类型模板 -->
+									<DataTemplate DataType="m:BoolSettingItem">
+										<Grid ColumnDefinitions="*,Auto" Margin="0,0,0,15">
+											<StackPanel Grid.Column="0" VerticalAlignment="Center">
+												<TextBlock Text="{Binding Label}" FontWeight="Medium"/>
+												<TextBlock Text="{Binding Description}" FontSize="12" Foreground="Gray" IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+											</StackPanel>
+											<ToggleSwitch Grid.Column="1" IsChecked="{Binding Value, Mode=TwoWay}" OnContent="" OffContent="" IsEnabled="{Binding IsUsed}"/>
+										</Grid>
+									</DataTemplate>
+
+									<!-- Number 类型模板 -->
+									<DataTemplate DataType="m:NumberSettingItem">
+										<Grid ColumnDefinitions="*,Auto" Margin="0,0,0,15">
+											<StackPanel Grid.Column="0"  VerticalAlignment="Center">
+												<TextBlock Text="{Binding Label}" VerticalAlignment="Center" FontWeight="Medium"/>
+												<TextBlock Text="{Binding Description}" FontSize="12" Foreground="Gray" IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+											</StackPanel>
+
+											<Grid Grid.Column="1" ColumnDefinitions="150,40">
+												<Slider Grid.Column="0" Value="{Binding Value, Mode=TwoWay}" Minimum="{Binding Min}" Maximum="{Binding Max}"
+														TickFrequency="1" IsSnapToTickEnabled="True" Margin="0,0,10,0" IsEnabled="{Binding IsUsed}"/>
+												<TextBlock Grid.Column="1" Text="{Binding Value, Mode=TwoWay}" VerticalAlignment="Center" TextAlignment="Right"/>
+											</Grid>
+										</Grid>
+									</DataTemplate>
+
+									<DataTemplate DataType="m:EnumSettingItem">
+										<Grid ColumnDefinitions="*,Auto" Margin="0,0,0,15">
+											<StackPanel Grid.Column="0" VerticalAlignment="Center">
+												<TextBlock Text="{Binding Label}" VerticalAlignment="Center" FontWeight="Medium"/>
+												<TextBlock Text="{Binding Description}" FontSize="12" Foreground="Gray" IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+											</StackPanel>
+											<ComboBox ItemsSource="{Binding EnumValues}"
+													  SelectedItem="{Binding Value, Mode=TwoWay}" Grid.Column="1"
+													  BorderThickness="0,0,0,1" CornerRadius="0"
+													  Background="Transparent" IsEnabled="{Binding IsUsed}"/>
+										</Grid>
+									</DataTemplate>
+
+									<DataTemplate DataType="m:TextSettingItem">
+										<Grid ColumnDefinitions="*,Auto" Margin="0,0,0,15">
+											<StackPanel Grid.Column="0" VerticalAlignment="Center">
+												<TextBlock Text="{Binding Label}" VerticalAlignment="Center" FontWeight="Medium"/>
+												<TextBlock Text="{Binding Description}" FontSize="12" Foreground="Gray" IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
+											</StackPanel>
+											<TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Value.Value, Mode=TwoWay}" BorderThickness="0,0,0,2" CornerRadius="0" Background="Transparent" Padding="5,15,5,0"
+													 Watermark="{Binding Watermark}" Margin="5,0,0,0" />
+										</Grid>
+									</DataTemplate>
+
+									<!-- 其他类型模板... -->
+								</ContentControl.DataTemplates>
+							</ContentControl>
+						</DataTemplate>
+					</ItemsControl.ItemTemplate>
+				</ItemsControl>
+				<!-- 底部留白 -->
+				<Panel Height="150"/>
+			</StackPanel>
+		</ScrollViewer>
+
+		<!-- 底部固定操作栏 (悬浮在 ScrollViewer 之上或位于 Grid 底部) -->
+		<Border Grid.Column="1" Grid.Row="1" VerticalAlignment="Bottom" Height="50" Background="{DynamicResource AppBackgroundColor}" BorderBrush="{DynamicResource BorderBrush}" BorderThickness="0,1,0,0" Padding="5,5,20,5">
+			<StackPanel Orientation="Horizontal" HorizontalAlignment="Right" Spacing="10">
+				<Button Content="{DynamicResource SettingsView_CancelButton}" Width="80" Command="{Binding CloseCommand}"/>
+				<Button Content="{DynamicResource SettingsView_Save}" Classes="accent" Width="100" Command="{Binding SaveCommand}"/>
+			</StackPanel>
+		</Border>
+	</Grid>
+</Window>

@@ -1,0 +1,106 @@
+<Window xmlns="https://github.com/avaloniaui"
+		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+		mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+		xmlns:vm="using:RimXmlEdit.ViewModels"
+		x:DataType="vm:AboutViewModel"
+		x:Class="RimXmlEdit.AboutWindow"
+		CanResize="False" Width="500" Height="700"
+		WindowStartupLocation="CenterOwner"
+		Title="AboutWindow">
+	<Window.Styles>
+		<!-- 简单的链接按钮样式 -->
+		<Style Selector="Button.link">
+			<Setter Property="Background" Value="Transparent"/>
+			<Setter Property="BorderThickness" Value="0"/>
+			<Setter Property="Foreground" Value="{DynamicResource SystemAccentColor}"/>
+			<Setter Property="Cursor" Value="Hand"/>
+			<Setter Property="HorizontalContentAlignment" Value="Left"/>
+			<Setter Property="Padding" Value="5,0"/>
+		</Style>
+		<Style Selector="Button.link:pointerover /template/ ContentPresenter">
+			<Setter Property="Foreground" Value="{DynamicResource SystemAccentColorLight1}"/>
+			<Setter Property="Background" Value="Transparent"/>
+		</Style>
+	</Window.Styles>
+
+	<Border Padding="30">
+		<Grid RowDefinitions="Auto, *">
+
+			<StackPanel Grid.Row="0" HorizontalAlignment="Center" Spacing="10" Margin="0,0,0,30">
+				<Image Width="80" Height="80" Source="/Assets/rimxmledit_logo.ico" Margin="0,0,0,10"/>
+
+				<TextBlock Text="RimXmlEdit"
+						   Classes="h1"
+						   HorizontalAlignment="Center"
+						   Foreground="{DynamicResource TextPrimaryBrush}"/>
+				<StackPanel Orientation="Horizontal" Spacing="5" HorizontalAlignment="Center">
+					<TextBlock Text="Version" Foreground="{DynamicResource TextSecondaryBrush}"/>
+					<TextBlock Text="{Binding AppVersion}" FontWeight="Bold" Foreground="{DynamicResource TextPrimaryBrush}"/>
+				</StackPanel>
+
+				<TextBlock Text="让 Xml 编辑更简单"
+						   HorizontalAlignment="Center"
+						   Foreground="{DynamicResource TextSecondaryBrush}"
+						   FontSize="12"/>
+			</StackPanel>
+
+			<!-- 中部：滚动内容区 -->
+			<ScrollViewer Grid.Row="1" Padding="0,0,10,0"
+				 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+				 ScrollViewer.VerticalScrollBarVisibility="Hidden">
+				<StackPanel Spacing="0">
+
+					<!-- 链接区域 -->
+					<Grid ColumnDefinitions="*,*" ColumnSpacing="10" Margin="0,0,0,20">
+						<Button Grid.Column="0" Command="{Binding OpenUrlCommand}" CommandParameter="{Binding GithubUrl}"
+								HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="40">
+							<StackPanel Orientation="Horizontal" Spacing="8">
+								<TextBlock Text="GitHub 仓库" VerticalAlignment="Center"/>
+							</StackPanel>
+						</Button>
+						<Button Grid.Column="1" Command="{Binding OpenUrlCommand}" CommandParameter="{Binding QQGroupUrl}"
+								HorizontalAlignment="Stretch" HorizontalContentAlignment="Center" Height="40">
+							<StackPanel Orientation="Horizontal" Spacing="8">
+								<TextBlock Text="加入 QQ 群" VerticalAlignment="Center"/>
+							</StackPanel>
+						</Button>
+					</Grid>
+
+					<Separator Margin="0,10,0,20"/>
+
+					<!-- 作者与贡献者 -->
+					<TextBlock Text="开发" Classes="h2" Margin="0,0,0,10"/>
+
+					<Grid ColumnDefinitions="80,*" Margin="0,0,0,15">
+						<TextBlock Text="作者" VerticalAlignment="Center" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+						<TextBlock Grid.Column="1" Text="{Binding Author}" VerticalAlignment="Center"/>
+					</Grid>
+
+					<Grid ColumnDefinitions="80,*" Margin="0,0,0,20" IsVisible="{Binding IsContributorsVisible}">
+						<TextBlock Text="贡献者" VerticalAlignment="Top" Margin="0,5,0,0" FontWeight="Bold" Foreground="{DynamicResource TextSecondaryBrush}"/>
+						<ItemsControl Grid.Column="1" ItemsSource="{Binding Contributors}">
+							<ItemsControl.ItemsPanel>
+								<ItemsPanelTemplate>
+									<WrapPanel Orientation="Horizontal"/>
+								</ItemsPanelTemplate>
+							</ItemsControl.ItemsPanel>
+							<ItemsControl.ItemTemplate>
+								<DataTemplate>
+									<Border Background="#F0F0F0" CornerRadius="4" Padding="8,4" Margin="0,0,8,8">
+										<TextBlock Text="{Binding}" FontSize="12"/>
+									</Border>
+								</DataTemplate>
+							</ItemsControl.ItemTemplate>
+						</ItemsControl>
+					</Grid>
+
+					<Separator Margin="0,10,0,20"/>
+
+					<TextBlock Text="开源协议 (GNU Affero General Public License v3.0 only)" Classes="h2" Margin="0,0,0,10" TextWrapping="Wrap"/>
+				</StackPanel>
+			</ScrollViewer>
+		</Grid>
+	</Border>
+</Window>

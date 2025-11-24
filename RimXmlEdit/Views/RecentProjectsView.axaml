@@ -1,0 +1,61 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 xmlns:local="using:RimXmlEdit"
+			 xmlns:i="using:Avalonia.Xaml.Interactivity"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:vm="using:RimXmlEdit.ViewModels"
+			 xmlns:models="using:RimXmlEdit.Models"
+			 mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+			 x:Class="RimXmlEdit.RecentProjectsView"
+			 x:DataType="vm:RecentProjectsViewModel">
+
+	<Grid RowDefinitions="Auto, 2, Auto, *" Margin="10,0,20,0">
+		<!-- Title -->
+		<TextBlock Grid.Row="0"
+				   Text="{DynamicResource RecentProjects_Title}"
+				   Foreground="{DynamicResource TextPrimaryBrush}"
+				   Classes="h1" FontWeight="DemiBold"
+				   FontSize="20"/>
+
+		<Separator Grid.Row="1" />
+
+		<!-- Search Box -->
+		<TextBox Text="{Binding SearchText, Mode=TwoWay}" Grid.Row="2"
+				 Margin="0,15,0,10"
+				 Watermark="{DynamicResource RecentProjects_SearchWatermark}"
+				 AutomationProperties.Name="{DynamicResource RecentProjects_SearchWatermark}"
+				 Theme="{StaticResource SearchTextBoxTheme}" />
+
+		<!-- Project List -->
+		<ListBox ItemsSource="{Binding FilteredProjects}" SelectedItem="{Binding SelectedProject}"
+				 ScrollViewer.HorizontalScrollBarVisibility="Disabled"
+				 ScrollViewer.VerticalScrollBarVisibility="Auto"
+				 ScrollViewer.AllowAutoHide="True" Grid.Row="3"
+				 Background="Transparent"
+				 SelectionMode="Single" DoubleTapped="ListBox_DoubleTapped">
+			<ListBox.ContextMenu>
+				<ContextMenu>
+					<MenuItem Header="Delete" Foreground="Red"
+							  Command="{Binding DeleteCommand}"
+							  CommandParameter="{Binding $parent[ListBox].SelectedItem}"/>
+				</ContextMenu>
+			</ListBox.ContextMenu>
+			<ListBox.ItemTemplate>
+				<DataTemplate DataType="models:ModProject">
+					<Border BorderBrush="{DynamicResource SeparatorBrush}"
+							BorderThickness="0,0,0,2">
+						<StackPanel Margin="8,5">
+							<TextBlock Text="{Binding Name}"
+									   FontSize="16"
+									   Foreground="{DynamicResource TextPrimaryBrush}" />
+							<TextBlock Text="{Binding Path}"
+									   FontSize="12"
+									   Foreground="{DynamicResource TextSecondaryBrush}" />
+						</StackPanel>
+					</Border>
+				</DataTemplate>
+			</ListBox.ItemTemplate>
+		</ListBox>
+	</Grid>
+</UserControl>

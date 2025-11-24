@@ -1,0 +1,8 @@
+{
+  "profiles": {
+    "RimXmlEdit.Desktop": {
+      "commandName": "Project",
+      "nativeDebugging": false
+    }
+  }
+}

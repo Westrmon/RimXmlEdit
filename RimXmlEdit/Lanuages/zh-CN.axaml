@@ -1,0 +1,62 @@
+<ResourceDictionary xmlns="https://github.com/avaloniaui"
+                    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+                    xmlns:system="using:System">
+    <!-- 通用 -->
+    <system:String x:Key="App_SubTitle">XML Mod 编辑器</system:String>
+    <system:String x:Key="App_SelectGameRoot">请先设置游戏根目录</system:String>
+
+    <!-- 主窗口 -->
+    <system:String x:Key="MainView_ChildListInputLabel">子节点列表</system:String>
+    <system:String x:Key="MainView_ChildListSearchWatermark">搜索子项...</system:String>
+    <system:String x:Key="MainView_TexturePreviewLabel">贴图预览</system:String>
+    <system:String x:Key="MainView_EditNodeTab">节点编辑</system:String>
+    <system:String x:Key="MainView_XMLSourceFileTab">XML源文件</system:String>
+	<system:String x:Key="MainView_Menu_File">文件</system:String>
+	<system:String x:Key="MainView_Menu_ImportXML">导入XML...</system:String>
+	<system:String x:Key="MainView_Menu_ImportDLL">导入DLL...</system:String>
+	<system:String x:Key="MainView_Menu_Exit">退出</system:String>
+	<system:String x:Key="MainView_Menu_Setting">设置</system:String>
+	<system:String x:Key="MainView_Menu_About">关于</system:String>
+	<system:String x:Key="MainView_FileExplorerTitle">文件资源管理器</system:String>
+
+    <system:String x:Key="TexturePreviewView_DragDropHint">拖入图片 / 暂无图层</system:String>
+
+    <!-- 侧边栏导航 -->
+    <system:String x:Key="Sidebar_RecentProjects">最近的项目</system:String>
+    <system:String x:Key="Sidebar_CreateNewProject">创建新项目</system:String>
+    <system:String x:Key="Sidebar_OpenProjectFromFolder">打开项目</system:String>
+
+    <!-- “最近的项目”视图 -->
+    <system:String x:Key="RecentProjects_Title">最近的项目</system:String>
+    <system:String x:Key="RecentProjects_SearchWatermark">搜索模组...</system:String>
+
+    <!-- “创建新项目”视图 -->
+    <system:String x:Key="CreateNewProject_Title">创建新项目</system:String>
+    <system:String x:Key="CreateNewProject_ProjectNameLabel">模组名称</system:String>
+    <system:String x:Key="CreateNewProject_ProjectNameWatermark">例如: MyAwesomeMod</system:String>
+    <system:String x:Key="CreateNewProject_ProjectLocationLabel">项目位置</system:String>
+    <system:String x:Key="CreateNewProject_ProjectDescription">模组描述</system:String>
+    <system:String x:Key="CreateNewProject_BrowseButton">浏览...</system:String>
+    <system:String x:Key="CreateNewProject_ProjectTemplateLabel">模组模板</system:String>
+    <system:String x:Key="CreateNewProject_SelectTemplatePlaceholder">请选择一个模板...</system:String>
+    <system:String x:Key="CreateNewProject_InputAuthorNameLabel">请输入作者名, 若有多个作者请用逗号分隔</system:String>
+    <system:String x:Key="CreateNewProject_InputProjectNameLabel">请输入项目名</system:String>
+    <system:String x:Key="CreateNewProject_AuthorNameLabel">作者</system:String>
+    <system:String x:Key="CreateNewProject_PackageIdLabel">模组 Id</system:String>
+    <system:String x:Key="CreateNewProject_ProjectVersionLabel">支持的游戏版本 (可多选)</system:String>
+    <system:String x:Key="CreateNewProject_ModDependenciesLabel">Mod 依赖项 (可选)</system:String>
+    <system:String x:Key="CreateNewProject_LoadBeforeListLabel">在以下Mod之前加载 (LoadBefore)</system:String>
+    <system:String x:Key="CreateNewProject_LoadAfterListLabel">在以下Mod之后加载 (LoadAfter)</system:String>
+    <system:String x:Key="CreateNewProject_AddLabel">添加</system:String>
+    <system:String x:Key="CreateNewProject_AddDependencyLabel">添加依赖项</system:String>
+    <system:String x:Key="CreateNewProject_AddDllDependencyLabel">添加 Dll 依赖项</system:String>
+    <system:String x:Key="CreateNewProject_LoadLabel">加载顺序 (可选)</system:String>
+    <system:String x:Key="CreateNewProject_CreateButton">创建</system:String>
+    <system:String x:Key="SettingsView_GeneralSettings">通用设置</system:String>
+	<system:String x:Key="SettingsView_CancelButton">取消</system:String>
+	<system:String x:Key="SettingsView_Save">保存设置</system:String>
+	
+    <system:String x:Key="MsEmbeddedView_SetFileName">设置文件名</system:String>
+    <system:String x:Key="MsEmbeddedView_IsFolder">是否为文件夹</system:String>
+    
+</ResourceDictionary>

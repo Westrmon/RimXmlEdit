@@ -1,0 +1,34 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 xmlns:local="using:RimXmlEdit"
+			 xmlns:dialogHost="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+			 xmlns:vm="using:RimXmlEdit.ViewModels"
+			 x:DataType="vm:GetTextViewModel"
+			 x:Class="RimXmlEdit.GetTextView">
+	<UserControl.DataContext>
+		<vm:GetTextViewModel />
+	</UserControl.DataContext>
+	<StackPanel Orientation="Vertical"
+				Background="Transparent">
+		<TextBlock Text="{DynamicResource MsEmbeddedView_SetFileName}" />
+		<TextBox x:Name="InputText" Height="24" Margin="0,10,0,20" />
+		<DockPanel>
+			<TextBlock DockPanel.Dock="Left" FontSize="17" Margin="6" Text="{DynamicResource MsEmbeddedView_IsFolder}" />
+			<RadioButton DockPanel.Dock="Right" IsChecked="{Binding IsFolder}" />
+		</DockPanel>
+		<StackPanel HorizontalAlignment="Right" Orientation="Horizontal">
+			<StackPanel.Styles>
+				<Style Selector="Button">
+					<Setter Property="Width" Value="80" />
+					<Setter Property="Margin" Value="10,0,0,0" />
+				</Style>
+			</StackPanel.Styles>
+			<Button Content="OK" Command="{Binding $parent[dialogHost:DialogHost].CloseDialogCommand}"
+					CommandParameter="{Binding #InputText.Text}"/>
+			<Button Content="Cancel" Command="{Binding $parent[dialogHost:DialogHost].CloseDialogCommand}" />
+		</StackPanel>
+	</StackPanel>
+</UserControl>
