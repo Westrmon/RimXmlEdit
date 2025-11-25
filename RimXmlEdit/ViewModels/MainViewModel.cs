@@ -124,6 +124,7 @@ public partial class MainViewModel : ViewModelBase
             _currentFilePath = e.FullName;
             _childViewNode = DefNodeManager.RootNode;
             _defManager.LoadFromExtendXml(_currentFilePath);
+            SearchChildText = string.Empty;
             UpdataChildList();
         };
 
@@ -178,7 +179,7 @@ public partial class MainViewModel : ViewModelBase
         if (_childViewNode == DefNodeManager.RootNode)
             DefTreeNodes.Add(node);
         else
-            DefNode.Children.Add(node);
+            _childViewNode.Children.Add(node);
         SearchChildText = string.Empty;
         //FlushChildListAfterAdd();
     }
@@ -224,7 +225,6 @@ public partial class MainViewModel : ViewModelBase
     private async Task UpdataChildList()
     {
         var contextNode = _isAddNodeToRoot ? DefNodeManager.RootNode : DefNode ?? DefNodeManager.RootNode;
-        _childViewNode = contextNode;
         IEnumerable<string>? childs = null;
         string fullName = string.Empty;
 
@@ -286,7 +286,8 @@ public partial class MainViewModel : ViewModelBase
         {
             _childNodes = childs.OrderBy(c => c);
         }
-
+        if (_childNodes.Any())
+            _childViewNode = contextNode;
         OnSearchChildTextChanged(SearchChildText);
     }
 

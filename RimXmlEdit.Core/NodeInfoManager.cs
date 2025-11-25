@@ -122,7 +122,9 @@ public class NodeInfoManager
         if (Node != null && Node.FieldTypeName.StartsWith("List", StringComparison.OrdinalIgnoreCase))
         {
             var type = Node.FieldTypeName[5..^1];
-            if (_cache.DefOfEnums.TryGetValue(CastToRealDef.GetRealDef(type), out var info))
+
+            if (_cache.DefCasts.TryGetValue(type, out var value)
+                && _cache.DefOfEnums.TryGetValue(value, out var info))
                 return info;
             else if (name.EndsWith("li"))
                 return Node.ResolveChildren(_cache.Schemas).Select(t => t.Name);

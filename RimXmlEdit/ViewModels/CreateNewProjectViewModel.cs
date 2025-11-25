@@ -174,12 +174,15 @@ public partial class CreateNewProjectViewModel : ViewModelBase
     [RelayCommand(CanExecute = nameof(CanCreateProject))]
     private void CreateProject()
     {
+        if (ProjectName == null) return;
+        var displayName = ProjectName;
+        ProjectName = ProjectName.Replace(' ', '_');
         var targetPath = Path.Combine(ProjectLocation, ProjectName);
         _logger.LogInformation("Attempting to create project '{}' at '{}'.", ProjectName, ProjectLocation);
         _settings.Author = Author.Split(',')[0].Replace(" ", "");
         var newItem = new RecentPorjectsItem
         {
-            ProjectName = ProjectName,
+            ProjectName = displayName,
             ProjectPath = targetPath
         };
         _settings.RecentProjects.Add(newItem);

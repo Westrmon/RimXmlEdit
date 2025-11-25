@@ -17,15 +17,24 @@ public class DefCache
     [Key(3)]
     public List<TypeSchema> Schemas { get; set; } = new();
 
+    [Key(4)]
+    public Dictionary<string, string> DefCasts { get; set; }
+
     public DefCache()
     {
     }
 
-    public DefCache(List<DefInfo> defInfos, Dictionary<string, IEnumerable<string>> defOfEnums, List<TypeSchema> schemas)
+    public DefCache(
+        List<DefInfo> defInfos,
+        Dictionary<string,
+        IEnumerable<string>> defOfEnums,
+        List<TypeSchema> schemas,
+        Dictionary<string, string>? defCasts = null)
     {
         DefInfos = defInfos;
         DefOfEnums = defOfEnums;
         Schemas = schemas;
+        if (defCasts != null) DefCasts = defCasts;
     }
 
     /// <summary>
@@ -39,7 +48,8 @@ public class DefCache
             TypeTag = this.TypeTag,
             DefInfos = new List<DefInfo>(this.DefInfos),
             DefOfEnums = new Dictionary<string, IEnumerable<string>>(this.DefOfEnums),
-            Schemas = new List<TypeSchema>(this.Schemas)
+            Schemas = new List<TypeSchema>(this.Schemas),
+            DefCasts = new Dictionary<string, string>(this.DefCasts)
         };
 
         newCache.MergeWith(other);
@@ -118,6 +128,13 @@ public class DefCache
             else
             {
                 this.DefOfEnums[kvp.Key] = this.DefOfEnums[kvp.Key].Concat(kvp.Value).Distinct().ToList();
+            }
+        }
+        if (other.DefCasts != null)
+        {
+            foreach (var kvp in other.DefCasts)
+            {
+                this.DefCasts[kvp.Key] = kvp.Value;
             }
         }
     }

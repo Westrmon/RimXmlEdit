@@ -13,7 +13,7 @@ public class InitProject
 
     public static void Init(Dictionary<string, object> userData, string projectPath, int extra = 7)
     {
-        string projectName = ((string)userData["modName"]).Replace(' ', '_');
+        string projectName = (string)userData["modName"];
         var version = userData["gameVersion"] as IEnumerable<string>;
         if (!Directory.Exists(Path.Combine(TempConfig.AppPath, "cache")))
         {

@@ -21,6 +21,7 @@ public class DefParser
     private Dictionary<Type, List<string>> _defOfValuesCache = new();
     private Dictionary<Type, int> _schemaIdMap = new();
     private List<TypeSchema> _schemaList = new();
+    private Dictionary<string, string> _defCasts = new();
 
     private Type? _tDef;
     private Type? _tDefOf;
@@ -80,6 +81,7 @@ public class DefParser
             _schemaIdMap.Clear();
             _rawTypeDict.Clear();
             _defOfValuesCache.Clear();
+            _defCasts.Clear();
 
             ExtractDataFromAssemblies();
 
@@ -99,11 +101,10 @@ public class DefParser
 
             cache = new DefCache(result,
                 _defOfValuesCache.ToDictionary(r => r.Key.FullName ?? r.Key.Name, r => r.Value.AsEnumerable()),
-                _schemaList);
+                _schemaList, _defCasts);
 
             Directory.CreateDirectory(Path.GetDirectoryName(cachePath)!);
 
-            // 1. Save DefCache
             using (var fs = File.Create(cachePath))
             {
                 MessagePackSerializer.Serialize(fs, cache);
@@ -113,7 +114,6 @@ public class DefParser
         }
         else
         {
-            // Load existing
             using (var fs = File.OpenRead(cachePath))
             {
                 cache = MessagePackSerializer.Deserialize<DefCache>(fs);
@@ -121,7 +121,6 @@ public class DefParser
             try
             {
                 _schemaList = cache.Schemas ?? new List<TypeSchema>();
-                // Rebuild ID Map
                 _schemaIdMap.Clear();
                 for (int i = 0; i < _schemaList.Count; i++)
                 {
@@ -154,10 +153,12 @@ public class DefParser
 
         LoadDefOfClasses();
 
-        // 初始种子：所有的 Def 和 CompProperties
         var initialTypes = _allTypes.Where(t => t != null && (t.IsSubclassOf(_tDef) || t.Name.Contains("CompProperties")));
 
         CollectData_BFS(initialTypes);
+
+        AnalyzeDefCasts();
+
         var relatedTypes = _allTypes.Where(t =>
             t != null &&
             !t.IsPrimitive &&
@@ -186,10 +187,8 @@ public class DefParser
                 if (TryNewRawTypeInfo(type, out var info))
                     _rawTypeDict[type] = info;
                 else
-                    continue; // 无法分析该类型，跳过子字段分析
+                    continue;
             }
-
-            // 分析字段，将新发现的类型加入队列
             var infoRef = _rawTypeDict[type];
             foreach (var field in infoRef.fields.Values)
             {
@@ -202,6 +201,28 @@ public class DefParser
                 if (!visited.Contains(ft) && !IsPrimitive(ft) && !_rawTypeDict.ContainsKey(ft))
                 {
                     queue.Enqueue(ft);
+                }
+            }
+        }
+    }
+
+    private void AnalyzeDefCasts()
+    {
+        if (_tDef == null) return;
+
+        foreach (var type in _allTypes)
+        {
+            if (type == null || TypeFilter.IsBannedType(type) || IsPrimitive(type))
+                continue;
+            var allDefFields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                .Where(f => !TypeFilter.IsBannedField(f) && f.FieldType.IsSubclassOf(_tDef))
+                .ToList();
+            if (allDefFields.Count == 1)
+            {
+                var field = allDefFields[0];
+                if (_defOfValuesCache.ContainsKey(field.FieldType))
+                {
+                    _defCasts[type.FullName ?? type.Name] = field.FieldType.FullName ?? field.FieldType.Name;
                 }
             }
         }
@@ -222,7 +243,6 @@ public class DefParser
             ParentName = defType.BaseType?.Name ?? ""
         };
 
-        // Def 的顶层字段，使用 Schema 逻辑生成，但 Def 本身不作为 Schema (因为它是根) 这里我们需要“扁平化”继承链上的所有字段
         defInfo.Fields = CollectFieldsFlattened(defType);
 
         return defInfo;
