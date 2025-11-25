@@ -1,7 +1,7 @@
 using System;
 using System.Globalization;
 
-namespace RimXmlEdit.Utils;
+namespace RimXmlEdit.Service;
 
 public interface ILocalizationService
 {

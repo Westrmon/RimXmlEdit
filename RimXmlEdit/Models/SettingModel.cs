@@ -4,38 +4,88 @@ using System.Collections.Generic;
 
 namespace RimXmlEdit.Models;
 
-public partial class SettingItemBase : ObservableObject
+public interface ICommittableSetting
+{
+    void Commit();
+}
+
+public abstract partial class SettingItemBase : ObservableObject, ICommittableSetting
 {
     public string Label { get; set; }
     public string Description { get; set; }
 
     [ObservableProperty]
     protected bool _isUsed = true;
+
+    public abstract void Commit();
 }
 
-public partial class TextSettingItem : SettingItemBase
+public abstract partial class SettingItem<T> : SettingItemBase
 {
-    [ObservableProperty] private EditableString _value;
+    [ObservableProperty]
+    protected T _value;
+
+    // 核心：保存时的回调动作
+    private readonly Action<T> _onCommit;
+
+    protected SettingItem(T initialValue, Action<T> onCommit)
+    {
+        _value = initialValue;
+        _onCommit = onCommit;
+    }
+
+    public override void Commit()
+    {
+        if (IsUsed)
+        {
+            _onCommit?.Invoke(Value);
+        }
+    }
+}
+
+public partial class TextSettingItem : SettingItem<string>
+{
     public string Watermark { get; set; }
-    public bool IsMultiline { get; set; } // 用于区分单行还是多行文本框
+    public bool IsMultiline { get; set; }
+
+    public TextSettingItem(string label, string value, Action<string> onCommit)
+        : base(value, onCommit)
+    {
+        Label = label;
+    }
 }
 
-public partial class BoolSettingItem : SettingItemBase
+public partial class BoolSettingItem : SettingItem<bool>
 {
-    [ObservableProperty] private bool _value;
+    public BoolSettingItem(string label, bool value, Action<bool> onCommit)
+        : base(value, onCommit)
+    {
+        Label = label;
+    }
 }
 
-public partial class NumberSettingItem : SettingItemBase
+public partial class NumberSettingItem : SettingItem<int>
 {
-    [ObservableProperty] private int _value;
     public int Min { get; set; } = 0;
     public int Max { get; set; } = 100;
+
+    public NumberSettingItem(string label, int value, Action<int> onCommit)
+        : base(value, onCommit)
+    {
+        Label = label;
+    }
 }
 
-public partial class EnumSettingItem : SettingItemBase
+public partial class EnumSettingItem : SettingItem<string>
 {
-    [ObservableProperty] private string _value;
     public IEnumerable<string> EnumValues { get; set; }
+
+    public EnumSettingItem(string label, string value, Action<string> onCommit, IEnumerable<string> enumValues)
+        : base(value, onCommit)
+    {
+        Label = label;
+        EnumValues = enumValues;
+    }
 }
 
 // --- 侧边栏导航项 ---

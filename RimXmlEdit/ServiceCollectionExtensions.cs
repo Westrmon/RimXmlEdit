@@ -4,6 +4,7 @@ using RimXmlEdit.Core;
 using RimXmlEdit.Core.NodeGeneration;
 using RimXmlEdit.Core.Parse;
 using RimXmlEdit.Core.Utils;
+using RimXmlEdit.Service;
 using RimXmlEdit.Utils;
 using RimXmlEdit.ViewModels;
 using RimXmlEdit.Views;

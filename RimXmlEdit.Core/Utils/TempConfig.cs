@@ -1,3 +1,5 @@
+using System.Reflection;
+
 namespace RimXmlEdit.Core.Utils;
 
 public class TempConfig
@@ -7,7 +9,7 @@ public class TempConfig
 
     private readonly Dictionary<string, string> _config = new();
 
-    public static Version AppVersion = new Version(0, 0, 1);
+    public static Version AppVersion = Assembly.GetExecutingAssembly().GetName().Version!;
 
     public static string AppPath
     {

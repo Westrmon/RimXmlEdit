@@ -137,7 +137,7 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Grid ColumnDefinitions="*,Auto" Margin="0,2">
-                                    <TextBox Text="{Binding}" Watermark="输入 packageId" />
+                                    <TextBox Text="{Binding Value}" Watermark="输入 packageId" />
                                     <Button Content="-" Grid.Column="1" Margin="5,0,0,0"
                                         Command="{Binding $parent[ItemsControl].DataContext.RemoveLoadAfterCommand}"
                                         CommandParameter="{Binding}" />
@@ -155,7 +155,7 @@
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
                                 <Grid ColumnDefinitions="*,Auto" Margin="0,2">
-                                    <TextBox Text="{Binding}" Watermark="输入 packageId" />
+                                    <TextBox Text="{Binding Value}" Watermark="输入 packageId" />
                                     <Button Content="-" Grid.Column="1" Margin="5,0,0,0"
                                         Command="{Binding $parent[ItemsControl].DataContext.RemoveLoadBeforeCommand}"
                                         CommandParameter="{Binding}" />

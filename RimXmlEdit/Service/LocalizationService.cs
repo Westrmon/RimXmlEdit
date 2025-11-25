@@ -2,6 +2,7 @@ using Avalonia;
 using Avalonia.Markup.Xaml.Styling;
 using Microsoft.Extensions.Logging;
 using RimXmlEdit.Core.Extensions;
+using RimXmlEdit.Service;
 using System;
 using System.Globalization;
 using System.Linq;
