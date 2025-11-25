@@ -43,7 +43,7 @@ on:
     tags:
       - "v*"
 permissions:
-  contents: write 
+  contents: write
 
 jobs:
   build:
@@ -70,6 +70,7 @@ jobs:
       with:
         dotnet-version: '9.0.x'
         cache: true
+        cache-dependency-path: '**/*.csproj'
     - name: Restore dependencies
       run: dotnet restore || (sleep 10 && dotnet restore)
     - name: Publish
