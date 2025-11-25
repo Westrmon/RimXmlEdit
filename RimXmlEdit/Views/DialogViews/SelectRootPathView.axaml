@@ -1,0 +1,17 @@
+<UserControl xmlns="https://github.com/avaloniaui"
+			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+			 xmlns:conv="using:RimXmlEdit.Converter"
+			 xmlns:dialogHost="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
+			 mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+			 x:Class="RimXmlEdit.SelectRootPathView">
+	<Grid Grid.RowDefinitions="Auto,Auto,Auto">
+		<TextBlock Grid.Row="0"  Text="{DynamicResource App_SelectGameRoot}" />
+		<TextBox Grid.Row="1" MinWidth="230" x:Name="RootPathTextBox" Margin="10" Watermark="D:\steam\steamapps\common\RimWorld" />
+		<Button Grid.Row="1" Content="..." Margin="12,12,13,12" Background="Transparent" HorizontalAlignment="Right" VerticalAlignment="Center" Click="SelectButton_Click" />
+		<Button Grid.Row="2" Content="OK" Command="{Binding $parent[dialogHost:DialogHost].CloseDialogCommand}"
+				IsEnabled="{Binding #RootPathTextBox.Text, Converter={x:Static conv:StringHasValueToBoolConverter.Instance}}"
+				CommandParameter="{Binding #RootPathTextBox.Text}"/>
+	</Grid>
+</UserControl>

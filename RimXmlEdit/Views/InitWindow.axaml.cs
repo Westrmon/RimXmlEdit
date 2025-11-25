@@ -2,7 +2,9 @@ using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
 using Avalonia.Input;
+using Avalonia.Interactivity;
 using CommunityToolkit.Mvvm.Messaging;
+using DialogHostAvalonia;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RimXmlEdit.Core.Extensions;
@@ -40,5 +42,11 @@ public partial class InitWindow : Window
         base.OnPointerPressed(e);
         if (e.GetPosition(this).Y < 30)
             this.BeginMoveDrag(e);
+    }
+
+    protected override void OnLoaded(RoutedEventArgs e)
+    {
+        base.OnLoaded(e);
+        (DataContext as InitViewModel)?.OnLoaded();
     }
 }

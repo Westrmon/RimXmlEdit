@@ -27,9 +27,6 @@ public partial class SidebarViewModel : ViewModelBase
     private readonly AppSettings _setting;
 
     [ObservableProperty]
-    public bool _isInitGamePath;
-
-    [ObservableProperty]
     private SidebarItem? _selectedItem;
 
     public string Version => $"v {TempConfig.AppVersion}";
@@ -79,18 +76,6 @@ public partial class SidebarViewModel : ViewModelBase
         }
         TempConfig.ProjectPath = path;
         WeakReferenceMessenger.Default.Send(new CloseWindowMessage { Sender = new WeakReference(this) });
-    }
-
-    [RelayCommand]
-    private async Task SelectGameRootPathAsync()
-    {
-        var path = await SelectFolderAsync("Select game root folder");
-        if (string.IsNullOrEmpty(path))
-            return;
-        _setting.GamePath = path;
-        _setting.SaveAppSettings();
-        TempConfig.GamePath = path;
-        IsInitGamePath = true;
     }
 
     private async Task<string> SelectFolderAsync(string title)

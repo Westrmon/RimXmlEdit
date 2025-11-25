@@ -1,5 +1,6 @@
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
+using DialogHostAvalonia;
 using Microsoft.Extensions.Options;
 using RimXmlEdit.Core;
 using RimXmlEdit.Core.Utils;
@@ -38,16 +39,31 @@ public partial class InitViewModel : ViewModelBase
                 ContentViewModel = createNewProjectViewModel;
             }
         };
-        Sidebar.IsInitGamePath = _setting.GamePath != string.Empty;
-        if (Sidebar.IsInitGamePath)
-            TempConfig.GamePath = _setting.GamePath;
-        // Set initial view
-        Sidebar.SelectedItem = Sidebar.Items.First();
     }
 
     [RelayCommand]
     private void Close()
     {
         Environment.Exit(0);
+    }
+
+    public void OnLoaded()
+    {
+        if (string.IsNullOrEmpty(_setting.GamePath))
+        {
+            InitGamePath();
+        }
+    }
+
+    private async void InitGamePath()
+    {
+        var diaglogView = new SelectRootPathView();
+        var result = await DialogHost.Show(diaglogView, "InitDialogHost");
+        if (result is string returnedText && !string.IsNullOrEmpty(returnedText))
+        {
+            TempConfig.GamePath = returnedText;
+            _setting.GamePath = returnedText;
+            _setting.SaveAppSettings();
+        }
     }
 }

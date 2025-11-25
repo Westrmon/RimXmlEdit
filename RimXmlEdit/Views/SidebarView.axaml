@@ -41,7 +41,7 @@
 		</Style>
 	</UserControl.Styles>
 
-	<Grid Margin="0,20,0,0" Grid.RowDefinitions="Auto,*, 50, 20">
+	<Grid Margin="0,20,0,0" Grid.RowDefinitions="Auto,*, 20">
 
 		<!-- Header Section -->
 		<StackPanel Grid.Row="0"
@@ -70,12 +70,8 @@
 				</DataTemplate>
 			</ListBox.ItemTemplate>
 		</ListBox>
-		<Button Grid.Row="2" Content="{DynamicResource App_SelectGameRoot}"
-				IsVisible="{Binding !IsInitGamePath}" HorizontalAlignment="Stretch"
-				Foreground="Red" Background="Transparent"
-			    Command="{Binding SelectGameRootPathCommand}" />
-		<TextBlock Text="{Binding Version}" Classes="h3" Grid.Row="3"
-				   Margin="10,5,0,0"
+		<TextBlock Text="{Binding Version}" Classes="h3" Grid.Row="2"
+				   Margin="10,5,0,5"
 				   Foreground="{DynamicResource TextSecondaryBrush}"/>
 	</Grid>
 </UserControl>

@@ -5,6 +5,7 @@
 		mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="480"
 		xmlns:views="using:RimXmlEdit"
 		xmlns:vm="using:RimXmlEdit.ViewModels"
+		xmlns:dialogHost="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
 		x:Class="RimXmlEdit.InitWindow"
 		x:DataType="vm:InitViewModel"
 		ExtendClientAreaChromeHints="NoChrome"
@@ -14,30 +15,32 @@
 		Title="RimXmlEdit" Height="480" Width="800"
 		WindowStartupLocation="CenterScreen"
 		CanResize="False">
-	<Grid ColumnDefinitions="200,*"
-		  Background="{DynamicResource AppBackgroundColor}"
-		  RowDefinitions="32, *">
+	<dialogHost:DialogHost Identifier="InitDialogHost">
+		<Grid ColumnDefinitions="200,*"
+			  Background="{DynamicResource AppBackgroundColor}"
+			  RowDefinitions="32, *">
 
-		<!-- Sidebar -->
-		<views:SidebarView x:Name="Sidebar" Grid.Column="0" Grid.RowSpan="2"
-						   DataContext="{Binding Sidebar}"/>
+			<!-- Sidebar -->
+			<views:SidebarView x:Name="Sidebar" Grid.Column="0" Grid.RowSpan="2"
+							   DataContext="{Binding Sidebar}"/>
 
-		<Button Grid.RowSpan="2" Grid.Column="1" Margin="0,5,5,0"
-				VerticalAlignment="Top" HorizontalAlignment="Right"
-				Foreground="{DynamicResource AccentBrush}"
-				Background="Transparent" ZIndex="1"
-				Width="30" Height="30"
-				Command="{Binding CloseCommand}">
-			<PathIcon Data="M512 466.944l233.472-233.472a31.744 31.744 0 0 1 45.056 45.056L557.056 512l233.472 233.472a31.744 31.744 0 0 1-45.056 45.056L512 557.056l-233.472 233.472a31.744 31.744 0 0 1-45.056-45.056L466.944 512 233.472 278.528a31.744 31.744 0 0 1 45.056-45.056z"
-			          Width="16"/>
-		</Button>
-		<Border Grid.Column="1" Grid.RowSpan="2"
-				Background="{DynamicResource ControlHoverBackgroundColor}"
-				ZIndex="0"/>
-		<!-- Content Area -->
-		<ContentControl Grid.Column="1" Grid.Row="1"
-				        Margin="20,0,0,0"
-						Content="{Binding ContentViewModel}"
-						ZIndex="2"/>
-	</Grid>
+			<Button Grid.RowSpan="2" Grid.Column="1" Margin="0,5,5,0"
+					VerticalAlignment="Top" HorizontalAlignment="Right"
+					Foreground="{DynamicResource AccentBrush}"
+					Background="Transparent" ZIndex="1"
+					Width="30" Height="30"
+					Command="{Binding CloseCommand}">
+				<PathIcon Data="M512 466.944l233.472-233.472a31.744 31.744 0 0 1 45.056 45.056L557.056 512l233.472 233.472a31.744 31.744 0 0 1-45.056 45.056L512 557.056l-233.472 233.472a31.744 31.744 0 0 1-45.056-45.056L466.944 512 233.472 278.528a31.744 31.744 0 0 1 45.056-45.056z"
+						  Width="16"/>
+			</Button>
+			<Border Grid.Column="1" Grid.RowSpan="2"
+					Background="{DynamicResource ControlHoverBackgroundColor}"
+					ZIndex="0"/>
+			<!-- Content Area -->
+			<ContentControl Grid.Column="1" Grid.Row="1"
+							Margin="20,0,0,0"
+							Content="{Binding ContentViewModel}"
+							ZIndex="2"/>
+		</Grid>
+	</dialogHost:DialogHost>
 </Window>
