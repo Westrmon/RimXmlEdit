@@ -10,6 +10,7 @@ using RimXmlEdit.Core;
 using RimXmlEdit.Core.Extensions;
 using RimXmlEdit.Core.NodeGeneration;
 using RimXmlEdit.Models;
+using RimXmlEdit.Service;
 using RimXmlEdit.Utils;
 using RimXmlEdit.Views;
 using System;

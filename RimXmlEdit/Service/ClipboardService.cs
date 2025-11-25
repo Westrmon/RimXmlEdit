@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace RimXmlEdit.Utils;
+namespace RimXmlEdit.Service;
 
 public static class ClipboardService
 {

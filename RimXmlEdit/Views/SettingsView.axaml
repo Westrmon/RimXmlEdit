@@ -64,9 +64,9 @@
 							<Grid ColumnDefinitions="120,*" Margin="0,0,0,15">
 								<TextBlock Text="{Binding Label}" VerticalAlignment="{Binding IsMultiline, Converter={x:Static ObjectConverters.IsNull}, ConverterParameter=Top}" Margin="0,6,0,0" FontWeight="Medium"/>
 								<Panel Grid.Column="1">
-									<TextBox Text="{Binding Value.Value, Mode=TwoWay}" Watermark="{Binding Watermark}"
+									<TextBox Text="{Binding Value, Mode=TwoWay}" Watermark="{Binding Watermark}"
 											 IsVisible="{Binding !IsMultiline}"/>
-									<TextBox Text="{Binding Value.Value, Mode=TwoWay}" Watermark="{Binding Watermark}"
+									<TextBox Text="{Binding Value, Mode=TwoWay}" Watermark="{Binding Watermark}"
 											 IsVisible="{Binding IsMultiline}"
 											 AcceptsReturn="True" TextWrapping="WrapWithOverflow" Height="80"/>
 								</Panel>
@@ -150,7 +150,7 @@
 							<ItemsControl.ItemTemplate>
 								<DataTemplate>
 									<Grid ColumnDefinitions="*,Auto" Margin="0,2">
-										<TextBox Text="{Binding, Mode=TwoWay}" Watermark="Input packageId" />
+										<TextBox Text="{Binding Value, Mode=TwoWay}" Watermark="Input packageId" />
 										<Button Content="-" Grid.Column="1" Margin="5,0,0,0"
 												Command="{Binding $parent[ItemsControl].DataContext.RemoveLoadAfterCommand}"
 												CommandParameter="{Binding}" />
@@ -168,7 +168,7 @@
 							<ItemsControl.ItemTemplate>
 								<DataTemplate>
 									<Grid ColumnDefinitions="*,Auto" Margin="0,2">
-										<TextBox Text="{Binding, Mode=TwoWay}" Watermark="Input packageId" />
+										<TextBox Text="{Binding Value, Mode=TwoWay}" Watermark="Input packageId" />
 										<Button Content="-" Grid.Column="1" Margin="5,0,0,0"
 												Command="{Binding $parent[ItemsControl].DataContext.RemoveLoadBeforeCommand}"
 												CommandParameter="{Binding}" />
@@ -238,7 +238,7 @@
 												<TextBlock Text="{Binding Label}" VerticalAlignment="Center" FontWeight="Medium"/>
 												<TextBlock Text="{Binding Description}" FontSize="12" Foreground="Gray" IsVisible="{Binding Description, Converter={x:Static StringConverters.IsNotNullOrEmpty}}"/>
 											</StackPanel>
-											<TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Value.Value, Mode=TwoWay}" BorderThickness="0,0,0,2" CornerRadius="0" Background="Transparent" Padding="5,15,5,0"
+											<TextBox Grid.Row="0" Grid.Column="1" Text="{Binding Value, Mode=TwoWay}" BorderThickness="0,0,0,2" CornerRadius="0" Background="Transparent" Padding="5,15,5,0"
 													 Watermark="{Binding Watermark}" Margin="5,0,0,0" />
 										</Grid>
 									</DataTemplate>

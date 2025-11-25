@@ -2,8 +2,6 @@ using MessagePack;
 using MessagePack.Formatters;
 using MessagePack.Resolvers;
 using RimXmlEdit.Core.Utils;
-using RimXmlEdit.Core.XmlOperator;
-using System.Xml.Linq;
 
 namespace RimXmlEdit.Core;
 
@@ -16,7 +14,7 @@ public class InitProject
     public static void Init(Dictionary<string, object> userData, string projectPath, int extra = 7)
     {
         string projectName = ((string)userData["modName"]).Replace(' ', '_');
-        string version = (string)userData["gameVersion"];
+        var version = userData["gameVersion"] as IEnumerable<string>;
         if (!Directory.Exists(Path.Combine(TempConfig.AppPath, "cache")))
         {
             Directory.CreateDirectory(Path.Combine(TempConfig.AppPath, "cache"));
@@ -24,7 +22,7 @@ public class InitProject
 
         var aboutPath = Path.Combine(projectPath, projectName, "About");
         Directory.CreateDirectory(aboutPath);
-        foreach (var vers in version.Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+        foreach (var vers in version)
         {
             Directory.CreateDirectory(Path.Combine(projectPath, projectName, vers));
             Directory.CreateDirectory(Path.Combine(projectPath, projectName, vers, "Defs"));
@@ -39,13 +37,6 @@ public class InitProject
             Directory.CreateDirectory(Path.Combine(projectPath, projectName, "Textures"));
         if ((extra & 2) != 0)
             Directory.CreateDirectory(Path.Combine(projectPath, projectName, "Sounds"));
-
-        var manager = new TemplateManager();
-        manager.LoadTemplates(TempConfig.TemplatesPath);
-        var rx = manager.ParseTemplate("About");
-
-        XElement finalXml = RXmlWriter.Finalize(rx.Root, userData, manager);
-        finalXml.Save(Path.Combine(aboutPath, "About.xml"));
     }
 
     public static void Load()

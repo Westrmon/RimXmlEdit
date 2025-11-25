@@ -29,7 +29,14 @@ public partial class SidebarViewModel : ViewModelBase
     [ObservableProperty]
     private SidebarItem? _selectedItem;
 
-    public string Version => $"v {TempConfig.AppVersion}";
+    public string Version
+    {
+        get
+        {
+            var v = TempConfig.AppVersion;
+            return $"{v.Major}.{v.Minor}.{v.Build} (Build {v.Revision})";
+        }
+    }
 
     /// <summary>
     /// Initializes a new instance of the <see cref="SidebarViewModel" /> class.

@@ -2,7 +2,6 @@ using MessagePack;
 using Microsoft.Extensions.Logging;
 using RimXmlEdit.Core.Entries;
 using RimXmlEdit.Core.Utils;
-using RimXmlEdit.Core.XmlOperator;
 using System.Text.RegularExpressions;
 using System.Xml;
 

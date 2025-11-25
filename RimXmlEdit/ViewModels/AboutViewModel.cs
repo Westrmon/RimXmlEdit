@@ -14,7 +14,8 @@ public partial class AboutViewModel : ViewModelBase
     public AboutViewModel()
     {
         var assembly = Assembly.GetEntryAssembly();
-        AppVersion = TempConfig.AppVersion.ToString();
+        var v = TempConfig.AppVersion;
+        AppVersion = $"{v.Major}.{v.Minor}.{v.Build} (Build {v.Revision})";
 
         Contributors = new ObservableCollection<string>();
         Contributors.CollectionChanged += (s, e) => IsContributorsVisible = Contributors.Count > 0;

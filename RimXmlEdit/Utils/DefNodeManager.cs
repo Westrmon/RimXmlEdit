@@ -4,7 +4,6 @@ using RimXmlEdit.Core;
 using RimXmlEdit.Core.Entries;
 using RimXmlEdit.Core.Extensions;
 using RimXmlEdit.Core.Utils;
-using RimXmlEdit.Core.XmlOperator;
 using RimXmlEdit.Models;
 using RimXmlEdit.ViewModels;
 using System;

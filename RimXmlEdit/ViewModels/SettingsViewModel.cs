@@ -7,7 +7,6 @@ using RimXmlEdit.Core;
 using RimXmlEdit.Core.Entries;
 using RimXmlEdit.Core.Extensions;
 using RimXmlEdit.Core.Utils;
-using RimXmlEdit.Core.XmlOperator;
 using RimXmlEdit.Models;
 using RimXmlEdit.Utils;
 using System;
@@ -15,23 +14,36 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.IO;
 using System.Linq;
+using System.Text;
 using System.Threading.Tasks;
 using static RimXmlEdit.Core.Utils.LoggerFactoryInstance;
 
 namespace RimXmlEdit.ViewModels;
 
-// 写的太傻逼了（‵□′）
 public partial class SettingsViewModel : ViewModelBase
 {
-    private string _aboutXmlPath;
-    private EditableString name;
-    private EditableString author;
-    private EditableString description;
-    private EditableString packageId;
-    private RXStruct rXStruct;
+    private RXStruct _rXStruct;
+    private readonly string _aboutXmlPath;
     private readonly ILogger _log;
     private readonly AppSettings _settings;
+    private readonly AboutMetadata _tempMetadata = new();
     public Action? CloseAction { get; set; }
+
+    public ObservableCollection<NavigationItem> NavigationItems { get; } = new();
+
+    public ObservableCollection<SettingItemBase> GeneralSettings { get; } = new();
+
+    public ObservableCollection<SettingItemBase> MetaDataSettings { get; } = new();
+
+    public ObservableCollection<ModDependency> ModDependencies { get; } = new();
+
+    public ObservableCollection<EditableString> DllDependencies { get; } = new();
+
+    public ObservableCollection<EditableString> LoadAfterList { get; } = new();
+    public ObservableCollection<EditableString> LoadBeforeList { get; } = new();
+
+    [ObservableProperty]
+    private NavigationItem _selectedNavigationItem;
 
     public SettingsViewModel(IOptions<AppSettings> appSettings)
     {
@@ -46,72 +58,15 @@ public partial class SettingsViewModel : ViewModelBase
     {
         try
         {
-            var sf = await File.ReadAllTextAsync(_aboutXmlPath);
-            rXStruct = XmlConverter.Deserialize(sf)!;
-            foreach (var item in rXStruct.Defs)
-            {
-                switch (item.TagName)
-                {
-                    case nameof(name): name = new(item.Value); break;
-                    case nameof(author): author = new(item.Value); break;
-                    case nameof(description): description = new(item.Value); break;
-                    case nameof(packageId): packageId = new(item.Value); break;
-                    case "modDependencies":
-                        foreach (var mod in item.Fields)
-                        {
-                            var dic = mod.Value as Dictionary<string, XmlFieldInfo>;
-                            var modDependency = new ModDependency
-                            {
-                                PackageId = dic.TryGetValue("packageId", out var va1) ? va1.Value as string : string.Empty,
-                                DisplayName = dic.TryGetValue("displayName", out var va2) ? va2.Value as string : string.Empty,
-                                SteamWorkshopUrl = dic.TryGetValue("steamWorkshopUrl", out var va3) ? va3.Value as string : string.Empty,
-                                DownloadUrl = dic.TryGetValue("downloadUrl", out var va4) ? va4.Value as string : string.Empty
-                            };
-                            ModDependencies.Add(modDependency);
-                        }
-                        break;
-
-                    case "loadAfter":
-                        foreach (var item2 in item.Fields)
-                        {
-                            var str = item2.Value as string;
-                            LoadAfterList.Add(str);
-                        }
-                        break;
-
-                    case "loadBefore":
-                        foreach (var item2 in item.Fields)
-                        {
-                            var str = item2.Value as string;
-                            LoadBeforeList.Add(str);
-                        }
-                        break;
-                }
-            }
-            _settings.CurrentProject.DependentPaths.ForEach(x => DllDependencies.Add(new EditableString(x)));
+            await LoadAboutXmlAsync();
+            LoadDllDependencies();
             InitializeDynamicSettings();
         }
         catch (Exception ex)
         {
-            _log.LogError(ex, "Setup initialization failed");
+            _log.LogError(ex, "Settings initialization failed");
         }
     }
-
-    public ObservableCollection<NavigationItem> NavigationItems { get; } = new();
-
-    public ObservableCollection<SettingItemBase> GeneralSettings { get; } = new();
-
-    public ObservableCollection<SettingItemBase> MetaDataSettings { get; } = new();
-
-    public ObservableCollection<ModDependency> ModDependencies { get; } = new();
-
-    public ObservableCollection<EditableString> DllDependencies { get; } = new();
-
-    public ObservableCollection<string> LoadAfterList { get; } = new();
-    public ObservableCollection<string> LoadBeforeList { get; } = new();
-
-    [ObservableProperty]
-    private NavigationItem _selectedNavigationItem;
 
     private void InitializeNavigation()
     {
@@ -123,22 +78,193 @@ public partial class SettingsViewModel : ViewModelBase
 
     private void InitializeDynamicSettings()
     {
-        var logEnum = Enum.GetNames<LogLevelConfig>();
-        // 通用设置
-        GeneralSettings.Add(new EnumSettingItem { Label = "语言", Value = _settings.Language, EnumValues = ["简体中文", "English"] });
-        GeneralSettings.Add(new BoolSettingItem { Label = "开启时自动加载dll依赖项", Value = _settings.AutoLoadDllDependencies });
-        GeneralSettings.Add(new BoolSettingItem { Label = "节点自动展开", Value = _settings.AutoExpandNodes });
-        GeneralSettings.Add(new TextSettingItem { Label = "值验证间隔(ms)", Description = "停止输入后一段时间验证, 间隔越短, 验证越频繁, 0为不验证", Value = new(_settings.ValueValidationInterval.ToString()), Watermark = "输入毫秒数" });
-        GeneralSettings.Add(new BoolSettingItem { Label = "打开文件后自动验证所有值", Description = "工作区打开文件后立即验证所有已填项, 可能会影响打开时间", Value = _settings.AutoValidateValuesAfterOpen, IsUsed = false });
-        GeneralSettings.Add(new NumberSettingItem { Label = "自动保存间隔(分钟)", Description = "自动保存到文件时间, 0为不自动保存", Value = _settings.AutoSaveInterval, Max = 60, Min = 0 });
-        GeneralSettings.Add(new EnumSettingItem { Label = "日志记录级别", Value = _settings.FileLoggingLevel.ToString(), EnumValues = logEnum });
-        GeneralSettings.Add(new EnumSettingItem { Label = "弹窗日志级别", Value = _settings.NotificationLoggingLevel.ToString(), EnumValues = logEnum });
-        // 项目信息 (使用相同的模板逻辑)
-        MetaDataSettings.Add(new TextSettingItem { Label = "项目名称", Value = name, Watermark = "输入项目名称" });
-        MetaDataSettings.Add(new TextSettingItem { Label = "作者", Value = author, Watermark = "你的名字" });
-        MetaDataSettings.Add(new TextSettingItem { Label = "Package ID", Value = packageId, Watermark = "唯一标识符" });
-        MetaDataSettings.Add(new TextSettingItem { Label = "描述", Value = description, IsMultiline = true });
+        var logLevels = Enum.GetNames<LogLevelConfig>();
+
+        GeneralSettings.Add(new EnumSettingItem(
+            "语言",
+            _settings.Language,
+            val => _settings.Language = val,
+            ["简体中文", "English"]
+        ));
+
+        GeneralSettings.Add(new BoolSettingItem(
+            "开启时自动加载dll依赖项",
+            _settings.AutoLoadDllDependencies,
+            val => _settings.AutoLoadDllDependencies = val
+        ));
+
+        GeneralSettings.Add(new BoolSettingItem(
+            "节点自动展开",
+            _settings.AutoExpandNodes,
+            val => _settings.AutoExpandNodes = val
+        ));
+
+        GeneralSettings.Add(new TextSettingItem(
+            "值验证间隔(ms)",
+            _settings.ValueValidationInterval.ToString(),
+            val =>
+            {
+                if (int.TryParse(val, out int v))
+                    _settings.ValueValidationInterval = v;
+            })
+        {
+            Description = "停止输入后一段时间验证, 间隔越短, 验证越频繁, 0为不验证",
+            Watermark = "输入毫秒数"
+        });
+
+        GeneralSettings.Add(new BoolSettingItem(
+            "打开文件后自动验证所有值",
+            _settings.AutoValidateValuesAfterOpen,
+            val => _settings.AutoValidateValuesAfterOpen = val)
+        {
+            Description = "工作区打开文件后立即验证所有已填项, 可能会影响打开时间",
+            IsUsed = false
+        });
+
+        GeneralSettings.Add(new NumberSettingItem(
+            "自动保存间隔(分钟)",
+            _settings.AutoSaveInterval,
+            val => _settings.AutoSaveInterval = val)
+        {
+            Description = "自动保存到文件时间, 0为不自动保存",
+            Max = 60,
+            Min = 0
+        });
+
+        GeneralSettings.Add(new EnumSettingItem(
+            "日志记录级别",
+            _settings.FileLoggingLevel.ToString(),
+            val => _settings.FileLoggingLevel = Enum.Parse<LogLevelConfig>(val),
+            logLevels
+        ));
+
+        GeneralSettings.Add(new EnumSettingItem(
+            "弹窗日志级别",
+            _settings.NotificationLoggingLevel.ToString(),
+            val => _settings.NotificationLoggingLevel = Enum.Parse<LogLevelConfig>(val),
+            logLevels
+        ));
+
+        MetaDataSettings.Add(new TextSettingItem(
+            "项目名称",
+            _tempMetadata.Name,
+            val => _tempMetadata.Name = val)
+        {
+            Watermark = "输入项目名称"
+        });
+
+        MetaDataSettings.Add(new TextSettingItem(
+            "作者",
+            _tempMetadata.Author,
+            val => _tempMetadata.Author = val
+        ));
+
+        MetaDataSettings.Add(new TextSettingItem(
+            "Package ID",
+            _tempMetadata.PackageId,
+            val => _tempMetadata.PackageId = val)
+        {
+            Watermark = "唯一标识符"
+        });
+
+        MetaDataSettings.Add(new TextSettingItem(
+            "描述",
+            _tempMetadata.Description,
+            val => _tempMetadata.Description = val)
+        {
+            IsMultiline = true
+        });
+        MetaDataSettings.Add(new TextSettingItem(
+            "支持版本",
+            _tempMetadata.Version,
+            val => _tempMetadata.Version = val)
+        {
+            Description = "请输入支持的游戏版本,并使用逗号分隔"
+        });
     }
+
+    private async Task LoadAboutXmlAsync()
+    {
+        if (!File.Exists(_aboutXmlPath)) return;
+        var sf = await File.ReadAllTextAsync(_aboutXmlPath);
+        _rXStruct = XmlConverter.Deserialize(sf)!;
+        foreach (var item in _rXStruct.Defs)
+        {
+            switch (item.TagName)
+            {
+                case "name": _tempMetadata.Name = item.Value; break;
+                case "author": _tempMetadata.Author = item.Value; break;
+                case "description": _tempMetadata.Description = item.Value; break;
+                case "packageId": _tempMetadata.PackageId = item.Value; break;
+                case "modDependencies":
+                    ParseModDependencies(item);
+                    break;
+
+                case "loadAfter":
+                    ParseList(item, LoadAfterList);
+                    break;
+
+                case "loadBefore":
+                    ParseList(item, LoadBeforeList);
+                    break;
+
+                case "supportedVersions":
+                    _tempMetadata.Version = CombinList(item);
+                    break;
+            }
+        }
+    }
+
+    private void LoadDllDependencies()
+    {
+        DllDependencies.Clear();
+        _settings.CurrentProject.DependentPaths.ForEach(x => DllDependencies.Add(new EditableString(x)));
+    }
+
+    private void ParseModDependencies(DefInfo item)
+    {
+        foreach (var mod in item.Fields)
+        {
+            if (mod.Value is Dictionary<string, XmlFieldInfo> dic)
+            {
+                ModDependencies.Add(new ModDependency
+                {
+                    PackageId = GetXmlStr(dic, "packageId"),
+                    DisplayName = GetXmlStr(dic, "displayName"),
+                    SteamWorkshopUrl = GetXmlStr(dic, "steamWorkshopUrl"),
+                    DownloadUrl = GetXmlStr(dic, "downloadUrl")
+                });
+            }
+        }
+    }
+
+    private void ParseList(DefInfo item, ObservableCollection<EditableString> list)
+    {
+        foreach (var field in item.Fields)
+        {
+            if (field.Value is string value)
+                list.Add(new EditableString(value));
+        }
+    }
+
+    private string CombinList(DefInfo item)
+    {
+        if (item.Fields.Count == 0)
+            return item.Value;
+        var sb = new StringBuilder(item.Fields.Count * 2 - 1);
+        foreach (var field in item.Fields)
+        {
+            if (field.Value is string value)
+            {
+                sb.Append(value);
+                sb.Append(',');
+            }
+        }
+        return sb.Remove(sb.Length - 1, 1).ToString();
+    }
+
+    private string GetXmlStr(Dictionary<string, XmlFieldInfo> dic, string key)
+       => dic.TryGetValue(key, out var v) && v.Value is string s ? s : string.Empty;
 
     [RelayCommand]
     private void Close()
@@ -149,118 +275,99 @@ public partial class SettingsViewModel : ViewModelBase
     [RelayCommand]
     private void Save()
     {
-        ApplyAbout();
-        ApplySettingsToModel();
-        _settings.SaveAppSettings();
-        _log.LogNotify("The configuration was successfully saved");
-        Close();
+        try
+        {
+            foreach (var item in GeneralSettings)
+                item.Commit();
+
+            foreach (var item in MetaDataSettings)
+                item.Commit();
+
+            _settings.CurrentProject.DependentPaths.Clear();
+            _settings.CurrentProject.DependentPaths.AddRange(DllDependencies
+                .Select(x => x.Value)
+                .Where(x => !string.IsNullOrEmpty(x)));
+            _settings.SaveAppSettings();
+            SaveAboutXml();
+            _log.LogNotify("The configuration was successfully saved");
+            Close();
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Failed to save settings");
+        }
     }
 
-    private void ApplyAbout()
+    private void SaveAboutXml()
     {
-        rXStruct.Defs.Clear();
-        rXStruct.Defs.Add(new DefInfo() { TagName = "name", Value = name.Value });
-        rXStruct.Defs.Add(new DefInfo() { TagName = "author", Value = author.Value });
-        rXStruct.Defs.Add(new DefInfo() { TagName = "description", Value = description.Value });
-        rXStruct.Defs.Add(new DefInfo() { TagName = "packageId", Value = packageId.Value });
+        if (_rXStruct == null) return;
 
-        var newValue = new List<XmlFieldInfo>(ModDependencies.Count);
-        if (ModDependencies.Count > 0)
+        UpdateOrAddSingleValue("name", _tempMetadata.Name);
+        UpdateOrAddSingleValue("author", _tempMetadata.Author);
+        UpdateOrAddSingleValue("description", _tempMetadata.Description);
+        UpdateOrAddSingleValue("packageId", _tempMetadata.PackageId);
+        UpdateOrAddSingleValue("supportedVersions", _tempMetadata.Version);
+        var modFields = new List<XmlFieldInfo>();
+        foreach (var mod in ModDependencies)
         {
-            foreach (var mod in ModDependencies)
+            var props = new Dictionary<string, XmlFieldInfo>();
+            AddIfNotEmpty(props, "packageId", mod.PackageId);
+            AddIfNotEmpty(props, "displayName", mod.DisplayName);
+            AddIfNotEmpty(props, "steamWorkshopUrl", mod.SteamWorkshopUrl);
+            AddIfNotEmpty(props, "downloadUrl", mod.DownloadUrl);
+            if (props.Count > 0)
             {
-                var dependencies = new Dictionary<string, XmlFieldInfo>();
-                if (!string.IsNullOrEmpty(mod.PackageId))
-                    dependencies["packageId"] = new XmlFieldInfo { Name = "packageId", Value = mod.PackageId };
-                if (!string.IsNullOrEmpty(mod.DisplayName))
-                    dependencies["displayName"] = new XmlFieldInfo { Name = "displayName", Value = mod.DisplayName };
-                if (!string.IsNullOrEmpty(mod.SteamWorkshopUrl))
-                    dependencies["steamWorkshopUrl"] = new XmlFieldInfo { Name = "steamWorkshopUrl", Value = mod.SteamWorkshopUrl };
-                if (!string.IsNullOrEmpty(mod.DownloadUrl))
-                    dependencies["downloadUrl"] = new XmlFieldInfo { Name = "downloadUrl", Value = mod.DownloadUrl };
-                newValue.Add(new XmlFieldInfo() { Name = "li", Value = dependencies });
+                modFields.Add(new XmlFieldInfo { Name = "li", Value = props });
             }
-            rXStruct.Defs.Add(new DefInfo() { TagName = "modDependencies", Fields = newValue });
         }
-        if (LoadAfterList.Count > 0)
-        {
-            var loadAfter = new List<XmlFieldInfo>();
-            foreach (var item2 in LoadAfterList)
-            {
-                loadAfter.Add(new XmlFieldInfo { Name = "li", Value = item2 });
-            }
-            rXStruct.Defs.Add(new DefInfo() { TagName = "loadAfter", Fields = loadAfter });
-        }
-        if (LoadBeforeList.Count > 0)
-        {
-            var loadBefore = new List<XmlFieldInfo>();
-            foreach (var item2 in LoadBeforeList)
-            {
-                loadBefore.Add(new XmlFieldInfo { Name = "li", Value = item2 });
-            }
-            rXStruct.Defs.Add(new DefInfo() { TagName = "loadBefore", Fields = loadBefore });
-        }
-        var content = XmlConverter.SerializeAbout(rXStruct);
-        File.WriteAllTextAsync(_aboutXmlPath, content);
+
+        UpdateOrAddListValue("modDependencies", modFields);
+        var loadAfterFields = LoadAfterList
+            .Where(s => !string.IsNullOrWhiteSpace(s.Value))
+            .Select(s => new XmlFieldInfo { Name = "li", Value = s.Value })
+            .ToList();
+        UpdateOrAddListValue("loadAfter", loadAfterFields);
+
+        var loadBeforeFields = LoadBeforeList
+            .Where(s => !string.IsNullOrWhiteSpace(s.Value))
+            .Select(s => new XmlFieldInfo { Name = "li", Value = s.Value })
+            .ToList();
+        UpdateOrAddListValue("loadBefore", loadBeforeFields);
+        var content = XmlConverter.SerializeAbout(_rXStruct);
+        File.WriteAllText(_aboutXmlPath, content);
     }
 
-    private void ApplySettingsToModel()
+    private void UpdateOrAddSingleValue(string tagName, string value)
     {
-        foreach (var item in GeneralSettings)
+        var def = _rXStruct.Defs.FirstOrDefault(x => x.TagName == tagName);
+        if (def != null)
+            def.Value = value;
+        else if (!string.IsNullOrEmpty(value))
+            _rXStruct.Defs.Add(new DefInfo { TagName = tagName, Value = value });
+    }
+
+    private void UpdateOrAddListValue(string tagName, List<XmlFieldInfo> newFields)
+    {
+        var def = _rXStruct.Defs.FirstOrDefault(x => x.TagName == tagName);
+
+        if (newFields == null || newFields.Count == 0)
         {
-            switch (item.Label)
-            {
-                case "开启时自动加载dll依赖项":
-                    if (item is BoolSettingItem autoLoad)
-                        _settings.AutoLoadDllDependencies = autoLoad.Value;
-                    break;
-
-                case "节点自动展开":
-                    if (item is BoolSettingItem autoExpand)
-                        _settings.AutoExpandNodes = autoExpand.Value;
-                    break;
-
-                case "值验证间隔(ms)":
-                    if (item is TextSettingItem valInterval && int.TryParse(valInterval.Value.Value, out int v))
-                        _settings.ValueValidationInterval = v;
-                    break;
-
-                case "打开文件后自动验证所有值":
-                    if (item is BoolSettingItem autoValidate)
-                        _settings.AutoValidateValuesAfterOpen = autoValidate.Value;
-                    break;
-
-                case "自动保存间隔(分钟)":
-                    if (item is NumberSettingItem autoSave)
-                        _settings.AutoSaveInterval = autoSave.Value;
-                    break;
-
-                case "日志记录级别":
-                    if (item is EnumSettingItem logLevel)
-                        _settings.FileLoggingLevel = Enum.Parse<LogLevelConfig>(logLevel.Value);
-                    break;
-
-                case "弹窗日志级别":
-                    if (item is EnumSettingItem logLevel2)
-                    {
-                        _settings.NotificationLoggingLevel = Enum.Parse<LogLevelConfig>(logLevel2.Value);
-                    }
-                    break;
-
-                case "语言":
-                    if (item is EnumSettingItem language)
-                        _settings.Language = language.Value?.ToString() ?? "zh-CN";
-                    break;
-            }
+            if (def != null)
+                _rXStruct.Defs.Remove(def);
         }
-        _settings.CurrentProject.DependentPaths.Clear();
-        foreach (var item in DllDependencies)
+        else
         {
-            if (!string.IsNullOrEmpty(item.Value))
-            {
-                _settings.CurrentProject.DependentPaths.Add(item.Value);
-            }
+            if (def != null)
+                def.Fields = newFields;
+            else
+                _rXStruct.Defs.Add(new DefInfo { TagName = tagName, Fields = newFields });
         }
+    }
+
+    private void AddIfNotEmpty(Dictionary<string, XmlFieldInfo> dict, string key, string? value)
+    {
+        if (!string.IsNullOrEmpty(value))
+            dict[key] = new XmlFieldInfo { Name = key, Value = value };
     }
 
     [RelayCommand]
@@ -281,11 +388,11 @@ public partial class SettingsViewModel : ViewModelBase
     [RelayCommand]
     private void AddLoadAfter()
     {
-        LoadAfterList.Add("");
+        LoadAfterList.Add(new EditableString(string.Empty));
     }
 
     [RelayCommand]
-    private void RemoveLoadAfter(string packageId)
+    private void RemoveLoadAfter(EditableString packageId)
     {
         if (packageId != null)
         {
@@ -296,11 +403,11 @@ public partial class SettingsViewModel : ViewModelBase
     [RelayCommand]
     private void AddLoadBefore()
     {
-        LoadBeforeList.Add("");
+        LoadBeforeList.Add(new EditableString(string.Empty));
     }
 
     [RelayCommand]
-    private void RemoveLoadBefore(string packageId)
+    private void RemoveLoadBefore(EditableString packageId)
     {
         if (packageId != null)
         {
@@ -317,25 +424,34 @@ public partial class SettingsViewModel : ViewModelBase
     [RelayCommand]
     private void RemoveDllDependency(EditableString path)
     {
-        if (packageId != null)
+        if (path != null)
         {
             DllDependencies.Remove(path);
         }
     }
 
-    [RelayCommand] // 需要放在一个地方
+    [RelayCommand]
     private async Task ImportDll(EditableString pathd)
     {
-        var file = await GlobalSingletonHelper.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
+        var files = await GlobalSingletonHelper.StorageProvider.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             AllowMultiple = false,
-            FileTypeFilter = new List<FilePickerFileType>
-            {
-                new FilePickerFileType("dll Files"){ Patterns = new[] { "*.dll" } },
-            },
-            Title = "Import dll File"
+            FileTypeFilter = new[] { new FilePickerFileType("dll Files") { Patterns = new[] { "*.dll" } } },
+            Title = "Import dll File List"
         });
-        if (file is null) return;
-        pathd.Value = file.FirstOrDefault()?.Path.LocalPath;
+
+        if (files?.Count > 0)
+        {
+            pathd.Value = files[0].Path.LocalPath;
+        }
+    }
+
+    private class AboutMetadata
+    {
+        public string Name { get; set; } = "";
+        public string Author { get; set; } = "";
+        public string Description { get; set; } = "";
+        public string PackageId { get; set; } = "";
+        public string Version { get; set; } = "";
     }
 }

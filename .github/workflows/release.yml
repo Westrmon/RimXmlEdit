@@ -73,9 +73,21 @@ jobs:
         cache-dependency-path: '**/*.csproj'
     - name: Restore dependencies
       run: dotnet restore || (sleep 10 && dotnet restore)
+    - name: Set Version Info
+      id: version
+      shell: bash
+      run: |
+        TAG_NAME=${GITHUB_REF_NAME}
+        VERSION_NO_V=${TAG_NAME#v}
+        BUILD_NUMBER=${{ github.run_number }}
+        FULL_VERSION="${VERSION_NO_V}.${BUILD_NUMBER}"
+        echo "提取到的版本: $VERSION_NO_V"
+        echo "构建版本: $FULL_VERSION"
+        echo "APP_VERSION=$VERSION_NO_V" >> $GITHUB_ENV
+        echo "APP_FULL_VERSION=$FULL_VERSION" >> $GITHUB_ENV
     - name: Publish
       run: |
-        dotnet publish -c Release -r ${{ matrix.target }} /p:PublishSingleFile=false --self-contained true -o publish_output
+        dotnet publish -c Release -r ${{ matrix.target }} /p:PublishSingleFile=false --self-contained true -o publish_output /p:Version=${{ env.APP_VERSION }} /p:AssemblyVersion=${{ env.APP_FULL_VERSION }} /p:FileVersion=${{ env.APP_FULL_VERSION }}
     - name: Package Windows
       if: matrix.os == 'windows-latest'
       run: |

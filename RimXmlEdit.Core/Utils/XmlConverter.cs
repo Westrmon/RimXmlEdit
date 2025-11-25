@@ -1,7 +1,7 @@
 using RimXmlEdit.Core.Entries;
 using System.Xml.Linq;
 
-namespace RimXmlEdit.Core.XmlOperator;
+namespace RimXmlEdit.Core.Utils;
 
 public static class XmlConverter
 {

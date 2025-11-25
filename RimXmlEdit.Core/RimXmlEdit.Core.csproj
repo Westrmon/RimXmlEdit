@@ -20,12 +20,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Content Include="Templates\AboutTemplate.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
-    <Content Include="Templates\BaseModDependency.xml">
-      <CopyToOutputDirectory>Always</CopyToOutputDirectory>
-    </Content>
+    <Folder Include="Templates\" />
   </ItemGroup>
 
 </Project>

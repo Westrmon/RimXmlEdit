@@ -5,6 +5,7 @@ using CommunityToolkit.Mvvm.Messaging;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Options;
 using RimXmlEdit.Core;
+using RimXmlEdit.Core.Entries;
 using RimXmlEdit.Core.Extensions;
 using RimXmlEdit.Core.Utils;
 using RimXmlEdit.Models;
@@ -62,8 +63,8 @@ public partial class CreateNewProjectViewModel : ViewModelBase
 
     public ObservableCollection<ModDependency> ModDependencies { get; } = new();
 
-    public ObservableCollection<string> LoadAfterList { get; } = new();
-    public ObservableCollection<string> LoadBeforeList { get; } = new();
+    public ObservableCollection<EditableString> LoadAfterList { get; } = new();
+    public ObservableCollection<EditableString> LoadBeforeList { get; } = new();
 
     /// <summary>
     /// Gets the collection of available project templates.
@@ -101,7 +102,7 @@ public partial class CreateNewProjectViewModel : ViewModelBase
         });
 
         // 添加一个示例加载顺序
-        LoadAfterList.Add("brrainz.harmony");
+        LoadAfterList.Add(new("brrainz.harmony"));
     }
 
     private void OnAuthorOrProjectNameChanged(object? sender, PropertyChangedEventArgs e)
@@ -130,11 +131,11 @@ public partial class CreateNewProjectViewModel : ViewModelBase
     [RelayCommand]
     private void AddLoadAfter()
     {
-        LoadAfterList.Add("");
+        LoadAfterList.Add(new(""));
     }
 
     [RelayCommand]
-    private void RemoveLoadAfter(string packageId)
+    private void RemoveLoadAfter(EditableString packageId)
     {
         if (packageId != null)
         {
@@ -145,11 +146,11 @@ public partial class CreateNewProjectViewModel : ViewModelBase
     [RelayCommand]
     private void AddLoadBefore()
     {
-        LoadBeforeList.Add("");
+        LoadBeforeList.Add(new(""));
     }
 
     [RelayCommand]
-    private void RemoveLoadBefore(string packageId)
+    private void RemoveLoadBefore(EditableString packageId)
     {
         if (packageId != null)
         {
@@ -173,47 +174,26 @@ public partial class CreateNewProjectViewModel : ViewModelBase
     [RelayCommand(CanExecute = nameof(CanCreateProject))]
     private void CreateProject()
     {
+        var targetPath = Path.Combine(ProjectLocation, ProjectName);
         _logger.LogInformation("Attempting to create project '{}' at '{}'.", ProjectName, ProjectLocation);
         _settings.Author = Author.Split(',')[0].Replace(" ", "");
         var newItem = new RecentPorjectsItem
         {
             ProjectName = ProjectName,
-            ProjectPath = Path.Combine(ProjectLocation, ProjectName)
+            ProjectPath = targetPath
         };
         _settings.RecentProjects.Add(newItem);
         _settings.CurrentProject = newItem;
         _settings.SaveAppSettings();
+        var userData = new Dictionary<string, object>
+            {
+                { "modName", ProjectName },
+                { "gameVersion", GameVersions.Where(e => e.IsSelected).Select(t => t.DisplayName) },
+            };
         Task.Run(() =>
         {
-            var version = GameVersions.Where(x => x.IsSelected).Select(t => t.DisplayName);
-            var dependenciesData = new List<Dictionary<string, string>>();
-            if (ModDependencies.Count > 0)
-            {
-                foreach (var dependency in ModDependencies)
-                {
-                    var dependencyData = new Dictionary<string, string>
-                    {
-                        { "dep_packageId", dependency.PackageId },
-                        { "dep_displayName", dependency.DisplayName },
-                        { "dep_steamUrl", dependency.SteamWorkshopUrl }
-                    };
-                }
-            }
-
-            var userData = new Dictionary<string, object>
-            {
-                { "authors", Author },
-                { "modName", ProjectName },
-                { "modDependencies", ProjectDescription },
-                { "modIconPath", ModIconPath },
-                { "modLoadBefore", LoadBeforeList },
-                { "modLoadAfter", LoadAfterList },
-                { "packageId", PackageId },
-                { "gameVersion", string.Join(',', version) },
-                { "description", ProjectDescription },
-            };
-
             InitProject.Init(userData, ProjectLocation);
+            CreateAboutXml(Path.Combine(targetPath, "About", "About.xml"));
         });
         TempConfig.ProjectPath = Path.Combine(ProjectLocation, ProjectName);
 
@@ -271,5 +251,62 @@ public partial class CreateNewProjectViewModel : ViewModelBase
         {
             ProjectLocation = folders.First().Path.LocalPath;
         }
+    }
+
+    private void CreateAboutXml(string filePath)
+    {
+        var rXStruct = new RXStruct();
+        rXStruct.Defs.Add(new DefInfo { TagName = "name", Value = ProjectName });
+        rXStruct.Defs.Add(new DefInfo { TagName = "author", Value = Author });
+        rXStruct.Defs.Add(new DefInfo { TagName = "packageId", Value = PackageId });
+        rXStruct.Defs.Add(new DefInfo { TagName = "description", Value = ProjectDescription ?? "No description provided." });
+        if (!string.IsNullOrEmpty(ModIconPath))
+        {
+            rXStruct.Defs.Add(new DefInfo { TagName = "iconPath", Value = "ModIcon.png" });
+        }
+        var versions = GameVersions.Where(x => x.IsSelected).Select(x => x.DisplayName).ToList();
+        if (versions.Count != 0)
+        {
+            var versionFields = versions.Select(v => new XmlFieldInfo { Name = "li", Value = v }).ToList();
+            rXStruct.Defs.Add(new DefInfo { TagName = "supportedVersions", Fields = versionFields });
+        }
+        if (ModDependencies.Any())
+        {
+            var modFields = new List<XmlFieldInfo>();
+            foreach (var mod in ModDependencies)
+            {
+                var props = new Dictionary<string, XmlFieldInfo>();
+                AddIfNotEmpty(props, "packageId", mod.PackageId);
+                AddIfNotEmpty(props, "displayName", mod.DisplayName);
+                AddIfNotEmpty(props, "steamWorkshopUrl", mod.SteamWorkshopUrl);
+                AddIfNotEmpty(props, "downloadUrl", mod.DownloadUrl);
+
+                if (props.Count > 0)
+                    modFields.Add(new XmlFieldInfo { Name = "li", Value = props });
+            }
+            if (modFields.Count > 0)
+                rXStruct.Defs.Add(new DefInfo { TagName = "modDependencies", Fields = modFields });
+        }
+        AddListToDefs(rXStruct, "loadAfter", LoadAfterList);
+        AddListToDefs(rXStruct, "loadBefore", LoadBeforeList);
+        var content = XmlConverter.SerializeAbout(rXStruct);
+        var dir = Path.GetDirectoryName(filePath);
+        if (!Directory.Exists(dir)) Directory.CreateDirectory(dir!);
+        File.WriteAllText(filePath, content);
+    }
+
+    private void AddListToDefs(RXStruct rXStruct, string tagName, IEnumerable<EditableString> list)
+    {
+        var validItems = list.Where(s => !string.IsNullOrWhiteSpace(s.Value)).ToList();
+        if (!validItems.Any()) return;
+
+        var fields = validItems.Select(x => new XmlFieldInfo { Name = "li", Value = x.Value }).ToList();
+        rXStruct.Defs.Add(new DefInfo { TagName = tagName, Fields = fields });
+    }
+
+    private void AddIfNotEmpty(Dictionary<string, XmlFieldInfo> dict, string key, string? value)
+    {
+        if (!string.IsNullOrEmpty(value))
+            dict[key] = new XmlFieldInfo { Name = key, Value = value };
     }
 }

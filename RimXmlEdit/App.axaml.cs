@@ -9,6 +9,7 @@ using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RimXmlEdit.Core.Extensions;
 using RimXmlEdit.Core.Utils;
+using RimXmlEdit.Service;
 using RimXmlEdit.Utils;
 using RimXmlEdit.ViewModels;
 using System;
