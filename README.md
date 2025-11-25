@@ -9,6 +9,11 @@
 
 ---
 
+
+<font color=red>**注意: 请先选择游戏根目录(如 D:\steam\steamapps\common\RimWorld)**</font>
+
+![重要](./docs/Picture_0.png)
+
 ## ✨ 核心特性 (Features)
 
 *   **🛠️ 更简单的项目创建**
