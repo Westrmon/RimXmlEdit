@@ -8,4 +8,6 @@ internal class GlobalSingletonHelper
     public static IStorageProvider StorageProvider { get; set; }
 
     public static IServiceProvider Service { get; set; }
+
+    public static ILauncher Launcher { get; set; }
 }

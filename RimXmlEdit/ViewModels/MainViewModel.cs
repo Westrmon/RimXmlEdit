@@ -17,7 +17,9 @@ using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.ComponentModel;
 using System.Globalization;
+using System.IO;
 using System.Linq;
+using System.Net.Http.Headers;
 using System.Threading.Tasks;
 using System.Timers;
 
@@ -113,6 +115,11 @@ public partial class MainViewModel : ViewModelBase
         _fileExplorer.OnOpenFile += (s, e) =>
         {
             OnAutoSaveEvent(null, null);
+            if (e.FullName.EndsWith("About.xml"))
+            {
+                GlobalSingletonHelper.Launcher.LaunchFileInfoAsync(new FileInfo(e.FullName));
+                return;
+            }
             _currentFilePath = e.FullName;
             _childViewNode = DefNodeManager.RootNode;
             _defManager.LoadFromExtendXml(_currentFilePath);

@@ -5,7 +5,7 @@ using Microsoft.Extensions.Options;
 using RimXmlEdit.Core;
 using RimXmlEdit.Core.Utils;
 using System;
-using System.Linq;
+using System.IO;
 
 namespace RimXmlEdit.ViewModels;
 
@@ -53,6 +53,8 @@ public partial class InitViewModel : ViewModelBase
         {
             InitGamePath();
         }
+        TempConfig.GamePath = _setting.GamePath;
+        Directory.CreateDirectory(Path.Combine(TempConfig.AppPath, "Projects"));
     }
 
     private async void InitGamePath()

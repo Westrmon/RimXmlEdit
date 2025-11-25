@@ -141,7 +141,7 @@ internal partial class DefNodeManager
                 // 解析第一层的节点, 一般都含有各种属性
                 foreach (var def in rxStruct.Defs)
                 {
-                    var node = CreateNode(def.TagName, RootNode);
+                    var node = CreateNode(def.TagName, RootNode, def.Value as string);
 
                     if (!string.IsNullOrEmpty(def.ParentName))
                         node.Attributes.Add(new DefAttributeViewModel(node, "ParentName", def.ParentName));
@@ -187,7 +187,7 @@ internal partial class DefNodeManager
         {
             foreach (var kvp in dictInfo)
             {
-                var node = CreateNode(kvp.Key, root);
+                var node = CreateNode(kvp.Key, root, kvp.Value?.Value as string);
 
                 // 注意: 只有当 Name 确实承载内容时才赋值 Value，否则可能会覆盖掉标签内容
                 if (kvp.Value?.Name != null && kvp.Value.Name != kvp.Key)
@@ -219,7 +219,7 @@ internal partial class DefNodeManager
             {
                 if (item is XmlFieldInfo info)
                 {
-                    var node = CreateNode(info.Name, root);
+                    var node = CreateNode(info.Name, root, info.Value as string);
                     if (!string.IsNullOrEmpty(info.Ref))
                     {
                         var attr = new DefAttributeViewModel(node, "Class", info.Ref);
@@ -246,7 +246,7 @@ internal partial class DefNodeManager
         }
         if (values is XmlFieldInfo singleInfo)
         {
-            var node = CreateNode(singleInfo.Name, root);
+            var node = CreateNode(singleInfo.Name, root, singleInfo.Value as string);
             if (!string.IsNullOrEmpty(singleInfo.Ref))
             {
                 var attr = new DefAttributeViewModel(node, "Class", singleInfo.Ref);
@@ -266,9 +266,10 @@ internal partial class DefNodeManager
         }
     }
 
-    public DefNode CreateNode(string tagName, DefNode parent, EventHandler<AttributeChangedEventArgs>? init = null)
+    public DefNode CreateNode(string tagName, DefNode parent, string? value = null, EventHandler<AttributeChangedEventArgs>? init = null)
     {
         var node = new DefNode(tagName, parent);
+        node.Value = value;
         node.IsNodeExpanded = _settings.AutoExpandNodes;
         node.AttributeChanged += MainViewModel.HandleNodeAttributeChanged;
         return node;

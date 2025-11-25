@@ -67,6 +67,7 @@ public partial class App : Application
                 localizationService.SwitchLanguage(new CultureInfo("zh-CN"));
                 var topLevel = TopLevel.GetTopLevel(desktop.MainWindow);
                 GlobalSingletonHelper.StorageProvider = topLevel.StorageProvider;
+                GlobalSingletonHelper.Launcher = topLevel.Launcher;
             }
         }
         catch (Exception ex)

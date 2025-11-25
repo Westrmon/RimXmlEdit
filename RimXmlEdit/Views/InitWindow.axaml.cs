@@ -29,6 +29,7 @@ public partial class InitWindow : Window
                 desktop.MainWindow = window;
                 var topLevel = GetTopLevel(window);
                 GlobalSingletonHelper.StorageProvider = topLevel.StorageProvider;
+                GlobalSingletonHelper.Launcher = topLevel.Launcher;
                 window.Show();
             }
             Close();
