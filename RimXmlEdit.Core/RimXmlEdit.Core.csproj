@@ -1,26 +1,21 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
 
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <ImplicitUsings>enable</ImplicitUsings>
-    <Nullable>enable</Nullable>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <ImplicitUsings>enable</ImplicitUsings>
+        <Nullable>enable</Nullable>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <None Remove="Entries\AboutTemplate.xml" />
-    <None Remove="Entries\BaseModDependencyTemplate.xml" />
-  </ItemGroup>
+    <ItemGroup>
+        <None Remove="Entries\AboutTemplate.xml"/>
+        <None Remove="Entries\BaseModDependencyTemplate.xml"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="MessagePack" Version="3.1.4" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.0" />
-    <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.0-rc.2.25502.107" />
-    <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.0" />
-  </ItemGroup>
-
-  <ItemGroup>
-    <Folder Include="Templates\" />
-  </ItemGroup>
-
+    <ItemGroup>
+        <PackageReference Include="MessagePack" Version="3.1.4"/>
+        <PackageReference Include="Microsoft.Extensions.Configuration" Version="10.0.0"/>
+        <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="10.0.0"/>
+        <PackageReference Include="Microsoft.Extensions.Logging" Version="10.0.0-rc.2.25502.107"/>
+        <PackageReference Include="Microsoft.Extensions.Options.ConfigurationExtensions" Version="10.0.0"/>
+    </ItemGroup>
 </Project>

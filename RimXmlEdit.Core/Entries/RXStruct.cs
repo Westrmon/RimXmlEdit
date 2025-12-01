@@ -9,12 +9,13 @@ public class RXStruct
     [Key(0)]
     public bool IsPatch { get; set; } = false;
 
-    [Key(1)]
-    public bool IsModMetaData { get; set; } = false;
+    [Key(1)] public bool IsModMetaData { get; set; } = false;
 
     /// <summary>
-    /// 定义节点信息
+    ///     定义节点信息
     /// </summary>
     [Key(2)]
     public List<DefInfo> Defs { get; set; } = new();
+
+    [Key(3)] public string FilePath { get; set; } = string.Empty;
 }

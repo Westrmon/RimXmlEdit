@@ -1,509 +1,602 @@
+using System.Reflection;
+using System.Text;
 using MessagePack;
 using Microsoft.Extensions.Logging;
 using RimXmlEdit.Core.Entries;
 using RimXmlEdit.Core.Extensions;
 using RimXmlEdit.Core.Utils;
-using System.Reflection;
-using System.Text;
 
 namespace RimXmlEdit.Core.Parse;
 
-// pathes 节点使用PatchOperation派生
 public class DefParser
 {
     private readonly ILogger _log;
+
     private string _dllPath;
-    private Assembly _rimworldAssembly;
-    private ILookup<Type, Type> _subclassLookup;
-    private List<Type> _allTypes;
+    private bool _isFirst;
+    private Type? _mustTransAttr;
+    private RawTypeCache _rawTypeCache;
+    private readonly AssemblyScanner _scanner;
+    private SchemaBuilder _schemaBuilder;
 
-    private Dictionary<Type, RawTypeInfo> _rawTypeDict = new Dictionary<Type, RawTypeInfo>();
-    private Dictionary<Type, List<string>> _defOfValuesCache = new();
-    private Dictionary<Type, int> _schemaIdMap = new();
-    private List<TypeSchema> _schemaList = new();
-    private Dictionary<string, string> _defCasts = new();
-
+    // Core Types Cache
     private Type? _tDef;
     private Type? _tDefOf;
+    private Type? _transAttr;
 
     public DefParser(string? dllPath = null)
     {
-        _log = this.Log(); // 扩展方法
-        var finalDllPath = dllPath ?? Path.Combine(TempConfig.GamePath, "RimWorldWin64_Data", "Managed", "Assembly-CSharp.dll");
-        Init(finalDllPath);
+        _log = this.Log();
+        var finalDllPath = dllPath ??
+                           Path.Combine(TempConfig.GamePath, "RimWorldWin64_Data", "Managed", "Assembly-CSharp.dll");
+        _dllPath = finalDllPath;
+        _isFirst = true;
+        _scanner = new AssemblyScanner(_log);
     }
 
-    public bool Init(string dllPath)
+    public bool Init(string? dllPath = null)
     {
-        _dllPath = dllPath;
+        if (!_isFirst && string.IsNullOrEmpty(dllPath)) return false;
+        _isFirst = false;
+        if (dllPath != null)
+            _dllPath = dllPath;
         if (string.IsNullOrEmpty(_dllPath) || !File.Exists(_dllPath)) return false;
 
         try
         {
-            _rimworldAssembly = Assembly.LoadFrom(_dllPath);
-            _allTypes = _rimworldAssembly.GetTypes().ToList();
-            // 建立子类索引，优化查找速度
-            _subclassLookup = _allTypes.Where(t => t.BaseType != null).ToLookup(t => t.BaseType!);
-
-            if (dllPath.EndsWith("Assembly-CSharp.dll"))
-            {
-                _tDef = _rimworldAssembly.GetType("Verse.Def");
-                _tDefOf = _rimworldAssembly.GetType("RimWorld.DefOf");
-            }
-
+            if (!_scanner.Load(_dllPath)) return false;
+            IdentifyCoreTypes();
             return true;
         }
         catch (Exception ex)
         {
-            _log.LogError(ex, "Failed to load assembly: {Path}", dllPath);
+            _log.LogError(ex, "Failed to initialize parser for: {Path}", dllPath);
             return false;
         }
     }
 
-    /// <summary>
-    /// 解析dll信息, (Def, DefOf...)
-    /// </summary>
-    /// <param name="forceSave"> 是否强制保存为缓存 </param>
-    /// <param name="defOutputPath"> 解析出定义的输出路径 </param>
-    /// <param name="setPrefixDef"> 是否保留def的命名空间前缀(一般用于社区模组) </param>
-    /// <returns> </returns>
-    public DefCache Parse(bool forceSave = false, string? defOutputPath = null, bool setPrefixDef = false)
+    private void IdentifyCoreTypes()
     {
-        DefCache? cache = null;
-        string cachePath = Path.Combine(TempConfig.AppPath, "cache", Path.GetFileNameWithoutExtension(_dllPath) + "Cache.bin");
-
-        if (!File.Exists(cachePath) || forceSave)
-        {
-            _log.LogNotify("Starting fresh parse...");
-
-            // Reset State
-            _schemaList.Clear();
-            _schemaIdMap.Clear();
-            _rawTypeDict.Clear();
-            _defOfValuesCache.Clear();
-            _defCasts.Clear();
-
-            ExtractDataFromAssemblies();
-
-            var result = new List<DefInfo>();
-            var allDefTypes = _allTypes.Where(t => _tDef != null && t.IsSubclassOf(_tDef));
-
-            foreach (Type defType in allDefTypes)
-            {
-                // 优先使用提取的 RawInfo，但也允许直接反射
-                if (_rawTypeDict.TryGetValue(defType, out var rawInfo))
-                {
-                    result.Add(MapToDefInfo(rawInfo, defType, setPrefixDef));
-                }
-            }
-
-            result = result.OrderBy(d => d.TagName).ToList();
-
-            cache = new DefCache(result,
-                _defOfValuesCache.ToDictionary(r => r.Key.FullName ?? r.Key.Name, r => r.Value.AsEnumerable()),
-                _schemaList, _defCasts);
-
-            Directory.CreateDirectory(Path.GetDirectoryName(cachePath)!);
-
-            using (var fs = File.Create(cachePath))
-            {
-                MessagePackSerializer.Serialize(fs, cache);
-            }
-
-            _log.LogNotify("Parse complete. {Name} Defs: {Count}", Path.GetFileNameWithoutExtension(_dllPath), result.Count);
-        }
-        else
-        {
-            using (var fs = File.OpenRead(cachePath))
-            {
-                cache = MessagePackSerializer.Deserialize<DefCache>(fs);
-            }
-            try
-            {
-                _schemaList = cache.Schemas ?? new List<TypeSchema>();
-                _schemaIdMap.Clear();
-                for (int i = 0; i < _schemaList.Count; i++)
-                {
-                    var t = _allTypes.FirstOrDefault(x => x.FullName == _schemaList[i].FullName);
-                    if (t != null) _schemaIdMap[t] = i;
-                }
-            }
-            catch (Exception ex)
-            {
-                _log.LogWarning(ex, "Failed to load schemas, will regenerate if needed.");
-            }
-            _log.LogNotify("Loading successfully from cache. {Name} Defs: {Count}",
-                Path.GetFileNameWithoutExtension(_dllPath),
-                cache.DefInfos.Count);
-        }
-
-        if (!string.IsNullOrEmpty(defOutputPath))
-        {
-            WriteDefOutput(cache!.DefInfos, defOutputPath);
-        }
-
-        return cache!;
+        var verseAssembly = _scanner.CoreAssembly;
+        _tDef = verseAssembly.GetType("Verse.Def");
+        _tDefOf = verseAssembly.GetType("RimWorld.DefOf");
+        _transAttr = verseAssembly.GetType("Verse.TranslationHandleAttribute");
+        _mustTransAttr = verseAssembly.GetType("Verse.MustTranslateAttribute");
+        _scanner.GetCompsBaseType();
     }
 
-    #region Extraction (BFS)
+    public DefCache Parse(bool forceSave = false, string? defOutputPath = null, bool setPrefixDef = false)
+    {
+        var cachePath = Path.Combine(TempConfig.AppPath, "cache",
+            Path.GetFileNameWithoutExtension(_dllPath) + "Cache.bin");
 
-    private void ExtractDataFromAssemblies()
+        if (File.Exists(cachePath) && !forceSave) return LoadFromCache(cachePath);
+
+        return ParseFresh(cachePath, defOutputPath, setPrefixDef);
+    }
+
+    private DefCache ParseFresh(string cachePath, string? defOutputPath, bool setPrefixDef)
+    {
+        _log.LogNotify("Starting fresh parse for {Dll}", Path.GetFileName(_dllPath));
+
+        _schemaBuilder = new SchemaBuilder();
+        _rawTypeCache = new RawTypeCache();
+        var defOfMap = ExtractDefOfs();
+        PerformDeepTypeScan();
+        RegisterComps();
+        var defCasts = AnalyzeDefCasts();
+        var defInfos = GenerateDefInfos(setPrefixDef);
+        var cache = new DefCache(
+            defInfos,
+            defOfMap,
+            _schemaBuilder.GetSchemas(),
+            _schemaBuilder.GetPolyClasses(),
+            defCasts
+        );
+
+        SaveCache(cache, cachePath);
+        if (!string.IsNullOrEmpty(defOutputPath)) WriteDebugOutput(defInfos, defOutputPath);
+
+        _log.LogNotify("Parse complete. Defs: {Count}", defInfos.Count);
+        return cache;
+    }
+
+    private DefCache LoadFromCache(string cachePath)
+    {
+        try
+        {
+            using var fs = File.OpenRead(cachePath);
+            var cache = MessagePackSerializer.Deserialize<DefCache>(fs);
+            _schemaBuilder = new SchemaBuilder();
+            _schemaBuilder.LoadFromCache(cache.Schemas, cache.Comps);
+
+            _log.LogNotify("Loaded from cache: {Name}", Path.GetFileNameWithoutExtension(_dllPath));
+            return cache;
+        }
+        catch (Exception ex)
+        {
+            _log.LogWarning(ex, "Cache corrupted, parsing fresh.");
+            return ParseFresh(cachePath, null, false);
+        }
+    }
+
+    #region Extraction Logic
+
+    private Dictionary<string, IEnumerable<string>> ExtractDefOfs()
+    {
+        var result = new Dictionary<string, IEnumerable<string>>();
+        if (_tDefOf == null || _tDef == null) return result;
+        foreach (var type in _scanner.AllTypes)
+        {
+            if (!type.IsDefined(_tDefOf, false)) continue;
+
+            var fields = type.GetFields(BindingFlags.Public | BindingFlags.Static)
+                .Where(f => _tDef.IsAssignableFrom(f.FieldType))
+                .Select(f => f.Name)
+                .ToList();
+
+            if (fields.Count <= 0) continue;
+
+            foreach (var f in type.GetFields(BindingFlags.Public | BindingFlags.Static))
+            {
+                if (!_tDef.IsAssignableFrom(f.FieldType)) continue;
+
+                var typeKey = f.FieldType.FullName ?? f.FieldType.Name;
+                if (!result.ContainsKey(typeKey))
+                    result[typeKey] = new List<string>();
+                ((List<string>)result[typeKey]).Add(f.Name);
+            }
+        }
+
+        return result;
+    }
+
+    private void RegisterComps()
+    {
+        var baseComps = _scanner.GetCompsBaseType().ToList();
+
+        foreach (var type in _scanner.AllTypes.Where(type => type is { IsAbstract: false, IsInterface: false } 
+                                                             && !TypeHelper.IsBannedType(type))
+                     .Where(type => baseComps.Any(type.IsSubclassOf)))
+        {
+            _schemaBuilder.GetOrCreatePolyClassId(type, t => CollectAndMapFields(t));
+            
+        }
+    }
+
+    private void PerformDeepTypeScan()
     {
         if (_tDef == null) return;
 
-        LoadDefOfClasses();
-
-        var initialTypes = _allTypes.Where(t => t != null && (t.IsSubclassOf(_tDef) || t.Name.Contains("CompProperties")));
-
-        CollectData_BFS(initialTypes);
-
-        AnalyzeDefCasts();
-
-        var relatedTypes = _allTypes.Where(t =>
-            t != null &&
-            !t.IsPrimitive &&
-            t.Namespace != null &&
-            !t.Namespace.StartsWith("System") &&
-            !_rawTypeDict.ContainsKey(t) &&
-            !TypeFilter.IsBannedType(t)
-        );
-    }
-
-    private void CollectData_BFS(IEnumerable<Type> types)
-    {
-        var queue = new Queue<Type>(types);
+        // 种子节点：所有的 Def 子类 + CompProperties
+        var seeds = _scanner.AllTypes.Where(t => t.Name.StartsWith("CompProperties") && !TypeHelper.IsBannedType(t)).ToList();
+        var seeds2 = _scanner.AllTypes
+            .Where(t => t.IsSubclassOf(_tDef) && !TypeHelper.IsBannedType(t)).ToList();
+        seeds2.AddRange(seeds);
+        var queue = new Queue<Type>(seeds2);
         var visited = new HashSet<Type>();
 
         while (queue.Count > 0)
         {
-            var type = queue.Dequeue();
-            if (type == null || visited.Contains(type) || TypeFilter.IsBannedType(type))
-                continue;
-
-            visited.Add(type);
-
-            if (!_rawTypeDict.ContainsKey(type))
+            var current = queue.Dequeue();
+            if (!visited.Add(current)) continue;
+            if (!_rawTypeCache.TryGet(current, out var rawInfo))
             {
-                if (TryNewRawTypeInfo(type, out var info))
-                    _rawTypeDict[type] = info;
-                else
-                    continue;
+                rawInfo = new RawTypeInfo(current);
+                _rawTypeCache.Add(current, rawInfo);
             }
-            var infoRef = _rawTypeDict[type];
-            foreach (var field in infoRef.fields.Values)
-            {
-                var ft = field.FieldType;
-                if (ft.IsGenericType && ft.GetGenericTypeDefinition() == typeof(List<>))
-                {
-                    ft = ft.GetGenericArguments()[0];
-                }
 
-                if (!visited.Contains(ft) && !IsPrimitive(ft) && !_rawTypeDict.ContainsKey(ft))
-                {
-                    queue.Enqueue(ft);
-                }
-            }
+            foreach (var finalType in rawInfo.ReferencedTypes.Select(TypeHelper.UnwrapListType)
+                         .Where(finalType => !visited.Contains(finalType)
+                                             && !TypeHelper.IsPrimitive(finalType)
+                                             && !TypeHelper.IsBannedType(finalType)))
+                queue.Enqueue(finalType);
+        }
+
+        foreach (var item in seeds)
+        {
+            _schemaBuilder.GetOrCreatePolyClassId(item, t => CollectAndMapFields(t));
         }
     }
 
-    private void AnalyzeDefCasts()
+    private Dictionary<string, string> AnalyzeDefCasts()
     {
-        if (_tDef == null) return;
+        var casts = new Dictionary<string, string>();
+        if (_tDef == null) return casts;
 
-        foreach (var type in _allTypes)
+        foreach (var type in _scanner.AllTypes)
         {
-            if (type == null || TypeFilter.IsBannedType(type) || IsPrimitive(type))
-                continue;
-            var allDefFields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
-                .Where(f => !TypeFilter.IsBannedField(f) && f.FieldType.IsSubclassOf(_tDef))
+            if (TypeHelper.IsBannedType(type) || TypeHelper.IsPrimitive(type)) continue;
+
+            var defFields = type.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance)
+                .Where(f => !TypeHelper.IsBannedField(f) && f.FieldType.IsSubclassOf(_tDef))
                 .ToList();
-            if (allDefFields.Count == 1)
-            {
-                var field = allDefFields[0];
-                if (_defOfValuesCache.ContainsKey(field.FieldType))
-                {
-                    _defCasts[type.FullName ?? type.Name] = field.FieldType.FullName ?? field.FieldType.Name;
-                }
-            }
+
+            if (defFields.Count == 1)
+                casts[type.FullName ?? type.Name] = defFields[0].FieldType.FullName ?? defFields[0].FieldType.Name;
         }
+        return casts;
     }
 
-    #endregion Extraction (BFS)
-
-    #region Mapping & Schema
-
-    private DefInfo MapToDefInfo(RawTypeInfo rawInfo, Type defType, bool setPrefixDef)
+    private List<DefInfo> GenerateDefInfos(bool setPrefixDef)
     {
-        var defInfo = new DefInfo
+        var result = new List<DefInfo>();
+        var defTypes =
+            _scanner.AllTypes.Where(t => _tDef != null && t.IsSubclassOf(_tDef) && !TypeHelper.IsBannedType(t));
+
+        foreach (var defType in defTypes)
         {
-            TagName = setPrefixDef ? rawInfo.fullName : rawInfo.className,
-            IsAbstract = defType.IsAbstract,
-            FullName = rawInfo.fullName,
-            Name = defType.Name,
-            ParentName = defType.BaseType?.Name ?? ""
-        };
+            if (!_rawTypeCache.TryGet(defType, out var rawInfo))
+                rawInfo = new RawTypeInfo(defType);
 
-        defInfo.Fields = CollectFieldsFlattened(defType);
+            var defInfo = new DefInfo
+            {
+                TagName = setPrefixDef ? rawInfo.FullName : rawInfo.ClassName,
+                IsAbstract = defType.IsAbstract,
+                FullName = rawInfo.FullName,
+                Name = defType.Name,
+                ParentName = defType.BaseType?.Name ?? ""
+            };
+            defInfo.Fields = CollectAndMapFields(defType);
+            result.Add(defInfo);
+        }
 
-        return defInfo;
+        return result.OrderBy(d => d.TagName).ToList();
     }
 
-    private List<XmlFieldInfo> CollectFieldsFlattened(Type type)
+    private List<XmlFieldInfo> CollectAndMapFields(Type startType)
     {
         var fields = new List<XmlFieldInfo>();
         var processedNames = new HashSet<string>();
+        var current = startType;
 
-        var current = type;
         while (current != null && current != typeof(object))
         {
-            // 优先从缓存取，取不到则反射（容错）
-            IEnumerable<RawFieldInfo> currentFields = Enumerable.Empty<RawFieldInfo>();
-            if (_rawTypeDict.TryGetValue(current, out var raw))
-            {
-                currentFields = raw.fields.Values;
-            }
-            else
-            {
-                currentFields = current.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly)
-                    .Where(f => !TypeFilter.IsBannedField(f))
-                    .Select(f => new RawFieldInfo(f));
-            }
+            if (!_rawTypeCache.TryGet(current, out var rawInfo))
+                rawInfo = new RawTypeInfo(current);
 
-            foreach (var field in currentFields)
-            {
-                if (processedNames.Add(field.name))
-                {
-                    fields.Add(CreateXmlFieldInfo(field.name, field.FieldType));
-                }
-            }
+            foreach (var field in rawInfo.Fields)
+                if (processedNames.Add(field.Name))
+                    fields.Add(CreateFieldInfo(field.Name, field.FieldType, field.Info));
+
+            foreach (var prop in rawInfo.Properties)
+                if (processedNames.Add(prop.Name))
+                    fields.Add(CreateFieldInfo(prop.Name, prop.PropertyType, null, prop.Info));
+
             current = current.BaseType;
         }
+
         return fields;
     }
 
-    /// <summary>
-    /// 核心方法：创建字段信息。如果是复杂类型，自动生成或引用 Schema。
-    /// </summary>
-    private XmlFieldInfo CreateXmlFieldInfo(string name, Type type)
+    private XmlFieldInfo CreateFieldInfo(string name, Type type, FieldInfo? fi = null, PropertyInfo? pi = null)
     {
         var info = new XmlFieldInfo { Name = name };
 
-        // 1. 处理 List<T>
-        if (type.IsGenericType && type.GetGenericTypeDefinition() == typeof(List<>))
+        if (fi != null)
         {
-            var itemType = type.GetGenericArguments()[0];
-            info.FieldTypeName = $"List<{SimplifyTypeName(itemType)}>";
+            if (_transAttr != null && Attribute.IsDefined(fi, _transAttr)) info.IsHaveTranslationHandle = true;
+            if (_mustTransAttr != null && Attribute.IsDefined(fi, _mustTransAttr)) info.MustTranslate = true;
+        }
 
-            // 判断多态
-            if (itemType.IsAbstract || itemType.IsInterface || (itemType.BaseType != null && _subclassLookup.Contains(itemType)))
+        if (TypeHelper.IsList(type, out var itemType))
+        {
+            info.FieldTypeName = $"List<{TypeHelper.GetSimplifiedName(itemType)}>";
+
+            if (IsPolymorphic(itemType))
             {
                 info.Type |= XmlFieldType.PolymorphicList;
-                info.PossibleClassValues = GetAllSubclasses(itemType)
-                    .Where(t => !t.IsAbstract && !t.IsInterface)
-                    .Select(t => t.Name)
-                    .ToList();
+                info.PossibleClassValues = GetPolymorphicIds(itemType);
             }
             else
             {
-                info.Type |= XmlFieldType.SimpleClass; // List of Simple Class
+                info.Type |= XmlFieldType.SimpleClass;
             }
 
-            // List 内部元素的 Schema
-            if (!IsPrimitive(itemType))
-            {
-                info.SchemaId = GetOrCreateSchema(itemType);
-            }
+            if (!TypeHelper.IsPrimitive(itemType))
+                info.SchemaId = GetSchemaId(itemType);
+
             return info;
         }
 
-        // 2. 处理普通类型
-        Type resolvedType = type; // 这里的 type 已经是 FieldType
+        info.FieldTypeName = TypeHelper.GetSimplifiedName(type);
 
-        if (IsPrimitive(resolvedType))
+        if (TypeHelper.IsPrimitive(type))
         {
             info.Type = XmlFieldType.Primitive;
-            info.FieldTypeName = SimplifyTypeName(resolvedType);
-            return info;
         }
-
-        if (resolvedType.IsEnum)
+        else if (type.IsEnum)
         {
             info.Type = XmlFieldType.Enumable;
-            info.FieldTypeName = resolvedType.Name;
-            info.EnumValues = Enum.GetNames(resolvedType).ToList();
-            return info;
+            info.EnumValues = Enum.GetNames(type).ToList();
         }
-
-        // 3. 复杂对象 (Complex Class)
-        info.Type = XmlFieldType.SimpleClass; // 默认为简单类结构
-        info.FieldTypeName = SimplifyTypeName(resolvedType);
-        info.SchemaId = GetOrCreateSchema(resolvedType);
+        else
+        {
+            info.Type = XmlFieldType.SimpleClass;
+            info.SchemaId = GetSchemaId(type);
+        }
 
         return info;
     }
 
-    /// <summary>
-    /// 获取或创建 Schema ID。如果是基本类型则返回 -1。
-    /// </summary>
-    private int GetOrCreateSchema(Type type)
+    private bool IsPolymorphic(Type type)
     {
-        if (type == null || IsPrimitive(type) || TypeFilter.IsBannedType(type))
-            return -1;
-
-        // 检查缓存
-        if (_schemaIdMap.TryGetValue(type, out int existingId))
-            return existingId;
-
-        // 预占位：防止循环引用 (Recursive definition) 在处理字段前先分配 ID 并加入 Map
-        int newId = _schemaList.Count;
-        _schemaIdMap[type] = newId;
-
-        var schema = new TypeSchema { FullName = type.FullName ?? type.Name };
-        // 先添加到 List 占位，虽然 Fields 还是空的，但在递归回到这里时能读到 ID
-        _schemaList.Add(schema);
-
-        // 收集字段 (不包含基类字段？通常 XML 嵌套对象不需要扁平化，除非它是 Def 的一部分。 RimWorld XML 中，
-        // <compClass> ... </compClass>
-        // 对应的对象通常只需要自己的字段。
-        // *修正*：如果是继承结构，XML 允许配置父类字段。所以这里应该包含继承链吗？ 通常 Def 的子节点如果是复杂对象，也是扁平化配置的。 为了保险，我们收集所有
-        // Public/Private 字段，包括基类的（RimWorld 行为）。
-
-        var fields = CollectFieldsFlattened(type);
-        // 注意：CollectFieldsFlattened 内部调用 CreateXmlFieldInfo -> GetOrCreateSchema 由于 _schemaIdMap
-        // 已经有了 type，递归会终止。
-
-        schema.Fields = fields;
-
-        return newId;
+        return type.IsAbstract || type.IsInterface || _scanner.HasSubclasses(type);
     }
 
-    #endregion Mapping & Schema
-
-    #region Helpers & Internal Classes
-
-    private bool IsPrimitive(Type t)
+    private List<int> GetPolymorphicIds(Type baseType)
     {
-        if (t.IsPrimitive) return true;
-        if (t == typeof(string)) return true;
-        if (t == typeof(decimal)) return true;
-        if (t == typeof(DateTime)) return true;
+        var list = new List<int>();
+        foreach (var sub in _scanner.GetAllSubclasses(baseType))
+            if (sub is { IsAbstract: false, IsInterface: false })
+                list.Add(_schemaBuilder.GetOrCreatePolyClassId(sub, t => CollectAndMapFields(t)));
 
-        if (t.Namespace == "UnityEngine" && (t.Name == "Vector2" || t.Name == "Vector3" || t.Name == "Color")) return true;
-        if (t.Name == "IntRange" || t.Name == "FloatRange") return true;
-
-        return false;
+        return list;
     }
 
-    private string SimplifyTypeName(Type t)
+    private int GetSchemaId(Type type)
     {
-        if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(List<>))
-            return $"List<{SimplifyTypeName(t.GetGenericArguments()[0])}>";
-        if (Nullable.GetUnderlyingType(t) is Type type)
-            return type.FullName;
-        return t.FullName;
+        return _schemaBuilder.GetOrCreateSchemaId(type, t => CollectAndMapFields(t));
     }
 
-    private IEnumerable<Type> GetAllSubclasses(Type baseType)
+    private void SaveCache(DefCache cache, string path)
     {
-        if (!_subclassLookup.Contains(baseType)) return Enumerable.Empty<Type>();
-        var children = _subclassLookup[baseType];
-        return children.Concat(children.SelectMany(GetAllSubclasses));
+        Directory.CreateDirectory(Path.GetDirectoryName(path)!);
+        using var fs = File.Create(path);
+        MessagePackSerializer.Serialize(fs, cache);
     }
 
-    private void LoadDefOfClasses()
+    private void WriteDebugOutput(List<DefInfo> result, string path)
     {
-        if (_tDefOf == null) return;
-        foreach (var t in _allTypes.Where(x => x.IsDefined(_tDefOf, false)))
-        {
-            foreach (var f in t.GetFields(BindingFlags.Public | BindingFlags.Static))
-            {
-                if (_tDef != null && _tDef.IsAssignableFrom(f.FieldType))
-                {
-                    if (!_defOfValuesCache.ContainsKey(f.FieldType))
-                        _defOfValuesCache[f.FieldType] = new List<string>();
-                    _defOfValuesCache[f.FieldType].Add(f.Name);
-                }
-            }
-        }
-    }
-
-    private void WriteDefOutput(List<DefInfo> result, string path)
-    {
-        // 简易输出用于 Debug
         var sb = new StringBuilder();
         foreach (var def in result)
         {
             sb.AppendLine($"{def.TagName} : {def.ParentName}");
-            foreach (var item in def.Fields)
-            {
-                sb.AppendLine($"  -- {item.Name} : {item.FieldTypeName}");
-            }
+            foreach (var item in def.Fields) sb.AppendLine($"  -- {item.Name} ({item.FieldTypeName})");
         }
+
         File.WriteAllText(path, sb.ToString());
     }
 
-    private bool TryNewRawTypeInfo(Type t, out RawTypeInfo info)
+    #endregion
+}
+
+#region Helper Components
+
+public class AssemblyScanner
+{
+    private readonly ILogger _log;
+    private ILookup<Type, Type> _subclassLookup;
+
+    public AssemblyScanner(ILogger log)
     {
-        info = default;
-        if (TypeFilter.IsBannedType(t))
-            return false;
+        _log = log;
+    }
+
+    public Assembly CoreAssembly { get; private set; }
+    public Assembly TargetAssembly { get; private set; }
+    public List<Type> AllTypes { get; private set; } = new();
+    public IEnumerable<Type>? CompsBaseType { get; private set; }
+
+    public void SetAssembly(Assembly assembly)
+    {
+        if (assembly.GetName().Name == "Assembly-CSharp")
+            CoreAssembly = assembly;
+        TargetAssembly = assembly;
+    }
+
+    public bool Load(string path)
+    {
         try
         {
-            info = new RawTypeInfo(t);
+            SetAssembly(Assembly.LoadFrom(path));
+            AllTypes = TargetAssembly.GetTypes().ToList();
+            _subclassLookup = AllTypes.Where(t => t.BaseType != null).ToLookup(t => t.BaseType!);
             return true;
+        }
+        catch (Exception ex)
+        {
+            _log.LogError(ex, "Assembly load failed.");
+            return false;
+        }
+    }
+
+    public IEnumerable<Type> GetCompsBaseType()
+    {
+        if (CompsBaseType != null) return  CompsBaseType;
+        CompsBaseType = AllTypes.Where(t => t.IsAbstract 
+                                            && t.BaseType == typeof(object) 
+                                            && t.Name.EndsWith("Comp"));
+        return CompsBaseType;
+    }
+
+    public bool HasSubclasses(Type t)
+    {
+        return _subclassLookup.Contains(t);
+    }
+
+    public IEnumerable<Type> GetAllSubclasses(Type baseType)
+    {
+        if (!_subclassLookup.Contains(baseType)) return Enumerable.Empty<Type>();
+        var direct = _subclassLookup[baseType];
+        return direct.Concat(direct.SelectMany(GetAllSubclasses));
+    }
+}
+
+public class SchemaBuilder
+{
+    private readonly List<PossibleClass> _polyClasses = new();
+    private readonly Dictionary<string, int> _polyClassIndexMap = new();
+    private readonly Dictionary<Type, int> _schemaIdMap = new();
+    private readonly List<TypeSchema> _schemas = new();
+
+    public List<TypeSchema> GetSchemas()
+    {
+        return _schemas;
+    }
+
+    public List<PossibleClass> GetPolyClasses()
+    {
+        return _polyClasses;
+    }
+
+    public void LoadFromCache(List<TypeSchema>? schemas, List<PossibleClass>? comps)
+    {
+        if (schemas != null) _schemas.AddRange(schemas);
+        if (comps != null) _polyClasses.AddRange(comps);
+    }
+
+    public int GetOrCreateSchemaId(Type type, Func<Type, List<XmlFieldInfo>> fieldResolver)
+    {
+        if (TypeHelper.IsPrimitive(type) || TypeHelper.IsBannedType(type)) return -1;
+        if (_schemaIdMap.TryGetValue(type, out var id)) return id;
+
+        id = _schemas.Count;
+        _schemaIdMap[type] = id;
+        var schema = new TypeSchema { FullName = type.FullName ?? type.Name };
+        _schemas.Add(schema);
+
+        schema.Fields = fieldResolver(type);
+
+        return id;
+    }
+
+    public int GetOrCreatePolyClassId(Type type, Func<Type, List<XmlFieldInfo>> fieldResolver)
+    {
+        // var name = type.Name.Replace("Properties_", "");
+        var name = type.Name;
+        if (_polyClassIndexMap.TryGetValue(name, out var id)) return id;
+
+        id = _polyClasses.Count;
+        var pc = new PossibleClass { FullName = name, SchemaId = -1 };
+
+        if (_schemaIdMap.TryGetValue(type, out var sid)) pc.SchemaId = sid;
+
+        _polyClasses.Add(pc);
+        _polyClassIndexMap[name] = id;
+        
+        try 
+        {
+            pc.Fields = fieldResolver(type);
         }
         catch
         {
-            return false;
+            pc.Fields = new List<XmlFieldInfo>();
         }
+        
+        return id;
     }
-
-    private struct RawFieldInfo
-    {
-        public string name;
-        public Type FieldType;
-
-        public RawFieldInfo(FieldInfo fi)
-        {
-            name = fi.Name; FieldType = fi.FieldType;
-        }
-    }
-
-    private struct RawTypeInfo
-    {
-        public string fullName;
-        public string className;
-        public Dictionary<string, RawFieldInfo> fields = new();
-
-        public RawTypeInfo(Type t)
-        {
-            fullName = t.FullName ?? t.Name;
-            className = t.Name;
-            // 仅提取当前类的字段，基类由 Flatten 逻辑处理
-            foreach (var f in t.GetFields(BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance | BindingFlags.DeclaredOnly))
-            {
-                if (!TypeFilter.IsBannedField(f))
-                    fields[f.Name] = new RawFieldInfo(f);
-            }
-        }
-    }
-
-    #endregion Helpers & Internal Classes
 }
 
-internal static class TypeFilter
+/// <summary>
+///     反射信息缓存，避免重复调用 GetFields
+/// </summary>
+public class RawTypeCache
 {
-    public static bool IsBannedType(Type type)
+    private readonly Dictionary<Type, RawTypeInfo> _dict = new();
+
+    public void Add(Type t, RawTypeInfo info)
     {
-        if (type == null) return true;
-        if (type.IsGenericParameter) return true;
-        if (type.FullName != null && (type.FullName.StartsWith("System") || type.FullName.StartsWith("UnityEngine"))) return true;
-        return type.IsSpecialName || type.Name.StartsWith('<');
+        _dict[t] = info;
     }
 
-    public static bool IsBannedField(FieldInfo field)
+    public bool TryGet(Type t, out RawTypeInfo info)
     {
-        // 过滤掉 backing fields (<Prop>k__BackingField)
-        return field.IsSpecialName || field.Name.Contains('>');
+        return _dict.TryGetValue(t, out info);
     }
 }
+
+public class RawTypeInfo
+{
+    public RawTypeInfo(Type t)
+    {
+        FullName = t.FullName ?? t.Name;
+        ClassName = t.Name;
+
+        const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance |
+                                   BindingFlags.DeclaredOnly;
+
+        foreach (var f in t.GetFields(flags))
+        {
+            if (TypeHelper.IsBannedField(f)) continue;
+            Fields.Add(new FieldEntry(f));
+            ReferencedTypes.Add(f.FieldType);
+        }
+
+        foreach (var p in t.GetProperties(BindingFlags.Public | BindingFlags.Instance | BindingFlags.DeclaredOnly))
+            if (p.CanWrite && p.GetMethod != null && p.GetIndexParameters().Length == 0)
+            {
+                Properties.Add(new PropertyEntry(p));
+                ReferencedTypes.Add(p.PropertyType);
+            }
+    }
+
+    public string FullName { get; }
+    public string ClassName { get; }
+    public List<FieldEntry> Fields { get; } = new();
+    public List<PropertyEntry> Properties { get; } = new();
+    public HashSet<Type> ReferencedTypes { get; } = new();
+
+    public record struct FieldEntry(FieldInfo Info)
+    {
+        public string Name => Info.Name;
+        public Type FieldType => Info.FieldType;
+    }
+
+    public record struct PropertyEntry(PropertyInfo Info)
+    {
+        public string Name => Info.Name;
+        public Type PropertyType => Info.PropertyType;
+    }
+}
+
+public static class TypeHelper
+{
+    public static bool IsList(Type t, out Type itemType)
+    {
+        if (t.IsGenericType && t.GetGenericTypeDefinition() == typeof(List<>))
+        {
+            itemType = t.GetGenericArguments()[0];
+            return true;
+        }
+
+        itemType = null!;
+        return false;
+    }
+
+    public static Type UnwrapListType(Type t)
+    {
+        return IsList(t, out var item) ? item : t;
+    }
+
+    public static bool IsPrimitive(Type t)
+    {
+        if (t.IsPrimitive || t == typeof(string) || t == typeof(decimal) || t == typeof(DateTime)) return true;
+        // Fast check for Unity types by namespace or name
+        if (t.Namespace == "UnityEngine" &&
+            (t.Name == "Vector2" || t.Name == "Vector3" || t.Name == "Color")) return true;
+        if (t.Name == "IntRange" || t.Name == "FloatRange") return true;
+        return false;
+    }
+
+    public static bool IsBannedType(Type t)
+    {
+        if (t == null || t.IsGenericParameter) return true;
+        if (t.FullName != null && (t.FullName.StartsWith("System") || t.FullName.StartsWith("UnityEngine")))
+            return true;
+        return t.IsSpecialName || t.Name.StartsWith('<');
+    }
+
+    public static bool IsBannedField(FieldInfo f)
+    {
+        return f.IsSpecialName || f.Name.Contains('>');
+    }
+
+    public static string GetSimplifiedName(Type t)
+    {
+        if (IsList(t, out var item)) return $"List<{GetSimplifiedName(item)}>";
+        return Nullable.GetUnderlyingType(t)?.FullName ?? t.FullName ?? t.Name;
+    }
+}
+
+#endregion

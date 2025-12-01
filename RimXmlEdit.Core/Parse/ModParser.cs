@@ -1,49 +1,58 @@
+using System.Text.RegularExpressions;
+using System.Xml;
 using MessagePack;
 using Microsoft.Extensions.Logging;
 using RimXmlEdit.Core.Entries;
 using RimXmlEdit.Core.Utils;
-using System.Text.RegularExpressions;
-using System.Xml;
 
 namespace RimXmlEdit.Core.Parse;
 
-// 暂时没用, 后续可以作为对mod搜索/xpath解析等, 也可以作为翻译工具类
 /// <summary>
-/// 通过mod解析为 <see cref="RXStruct" />
+///     将mod解析为 <see cref="RXStruct" />
 /// </summary>
 public class ModParser // 多线程标记
 {
-    private ILogger _log = LoggerFactoryInstance.Factory.CreateLogger(nameof(ModParser));
+    [Flags]
+    public enum ParseRange
+    {
+        Core = 1,
+        DLC,
+        CommunityMod = 4
+    }
 
-    private Regex _regex = new Regex(@"\d\.\d", RegexOptions.Compiled);
+    private readonly ILogger _log = LoggerFactoryInstance.Factory.CreateLogger(nameof(ModParser));
 
-    public IEnumerable<string>? LastParseErrorXMLPaths { get; private set; } = null;
+    private readonly Regex _regex = new(@"\d\.\d", RegexOptions.Compiled);
 
-    public Dictionary<string, int> ModReferenceCount { get; private set; } = null;
+    public IEnumerable<string>? LastParseErrorXMLPaths { get; private set; }
+
+    public Dictionary<string, int> ModReferenceCount { get; private set; }
 
     public IEnumerable<ModInfo> Parse(
         List<string>? modDir = null,
         ParseRange? parseRange = null,
-        bool isforceSave = false)
+        bool isForceSave = false)
     {
-        int count = 0;
+        var count = 0;
         var mods = new List<string>();
-        parseRange ??= ParseRange.Core | ParseRange.DLC;
-        List<ModInfo> modInfo = new List<ModInfo>();
-        string cachePath = Path.Combine(TempConfig.AppPath, "cache", "officialCache.bin");
-        string countCachePath = Path.Combine(TempConfig.AppPath, "cache", "officialRefCountCache.bin");
-        if (!File.Exists(cachePath) || isforceSave)
+        var range = parseRange ?? ParseRange.Core | ParseRange.DLC;
+        var modInfo = new List<ModInfo>();
+        var cachePath = Path.Combine(TempConfig.AppPath, "cache", "coreXmlCache.bin");
+        var countCachePath = Path.Combine(TempConfig.AppPath, "cache", "coreRefCache.bin");
+        if (!File.Exists(cachePath) || isForceSave)
         {
-            if ((parseRange & ParseRange.Core) is ParseRange.Core)
+            if (range.HasFlag(ParseRange.Core))
             {
                 mods.Add(Path.Combine(TempConfig.GamePath, "Data", "Core"));
                 if (mods.Count > 0)
                     _log.LogDebug("读取到Core");
                 count = mods.Count;
             }
-            if ((parseRange & ParseRange.DLC) is ParseRange.DLC)
+
+            if (range.HasFlag(ParseRange.DLC))
             {
-                var paths = Directory.GetDirectories(Path.Combine(TempConfig.GamePath, "Data")).Where(x => !x.EndsWith("Core")).ToList();
+                var paths = Directory.GetDirectories(Path.Combine(TempConfig.GamePath, "Data"))
+                    .Where(x => !x.EndsWith("Core")).ToList();
                 if (paths.Count > 0)
                     _log.LogDebug("共识别到{}个DLC", paths.Count);
                 count += paths.Count;
@@ -55,11 +64,11 @@ public class ModParser // 多线程标记
                 ParseMod(mods, modInfo);
 
                 ModReferenceCount = modInfo.SelectMany(m => m.Defs)
-                                           .SelectMany(d => d.Defs)
-                                           .GroupBy(t => t.TagName.Split('_')[0])
-                                           .Select(g => new { Name = g.Key, Count = g.Count() })
-                                           .OrderByDescending(c => c.Count)
-                                           .ToDictionary(e => e.Name, e => e.Count);
+                    .SelectMany(d => d.Defs)
+                    .GroupBy(t => t.TagName.Split('_')[0])
+                    .Select(g => new { Name = g.Key, Count = g.Count() })
+                    .OrderByDescending(c => c.Count)
+                    .ToDictionary(e => e.Name, e => e.Count);
 
                 using var fs = File.Create(cachePath);
                 MessagePackSerializer.Serialize(fs, modInfo);
@@ -76,84 +85,94 @@ public class ModParser // 多线程标记
                 using var fs = File.OpenRead(cachePath);
                 modInfo = MessagePackSerializer.Deserialize<List<ModInfo>>(fs);
             }
+
             if (File.Exists(countCachePath))
             {
                 using var fs2 = File.OpenRead(countCachePath);
                 ModReferenceCount = MessagePackSerializer.Deserialize<Dictionary<string, int>>(fs2);
             }
+
+            if (!range.HasFlag(ParseRange.DLC)) modInfo.RemoveRange(1, modInfo.Count - 1);
+
+            if (!range.HasFlag(ParseRange.Core)) modInfo.Clear();
         }
 
-        int officalInfoCount = modInfo.Count;
+        var officialInfoCount = modInfo.Count;
 
-        if (modDir != null && (parseRange & ParseRange.CommunityMod) is ParseRange.CommunityMod)
-        {
-            for (int i = 0; i < modDir.Count; i++)
+        if (modDir != null && range.HasFlag(ParseRange.CommunityMod))
+            foreach (var path in modDir)
             {
-                var path = modDir[i];
                 var childDirs = Directory.GetDirectories(path);
                 if (childDirs.Any(x => x.EndsWith("About")))
                     mods.Add(path);
                 else
                     mods.AddRange(childDirs);
             }
+
+        if (mods.Count <= 0) return modInfo;
+
+        FiliterExistCache(mods, modInfo);
+        ParseMod(mods, modInfo);
+        var infoAndPath = modInfo.Skip(officialInfoCount).Zip(mods, (info, path) => (info, path));
+        // 自动保存为缓存(以mod为单位, 主要是为了可以获取结构信息)
+        foreach (var item in infoAndPath)
+        {
+            var modName = item.path.Split(Path.DirectorySeparatorChar).Last();
+            var modPath = Path.Combine(TempConfig.AppPath, "cache", modName + "XmlCache.bin");
+            using var fs = File.Create(modPath);
+            MessagePackSerializer.Serialize(fs, modInfo);
         }
 
-        if (mods.Count > 0)
-        {
-            FiliterExistCache(mods, modInfo);
-            ParseMod(mods, modInfo);
-            var infoAndPath = modInfo.Skip(officalInfoCount).Zip(mods, (info, path) => (info, path));
-            // 自动保存为缓存(以mod为单位, 主要是为了可以获取结构信息)
-            foreach (var item in infoAndPath)
-            {
-                string modName = item.path.Split(Path.DirectorySeparatorChar).Last();
-                string modPath = Path.Combine(TempConfig.AppPath, "cache", modName + "Cache.bin");
-                using var fs = File.Create(modPath);
-                MessagePackSerializer.Serialize(fs, modInfo);
-            }
-        }
         return modInfo;
     }
 
     private void ParseMod(IEnumerable<string> modsPath, List<ModInfo> infos, bool isOverrideError = false)
     {
-        List<string> errorXmls = new List<string>();
+        var errorXmls = new List<string>();
         foreach (var mod in modsPath)
         {
             RXStruct about = null!;
-            List<RXStruct> modDefs = new List<RXStruct>();
-            foreach (string filePath in Directory.EnumerateFiles(mod, "*.xml", SearchOption.AllDirectories))
+            var modDefs = new List<RXStruct>();
+            foreach (var filePath in Directory.EnumerateFiles(mod, "*.xml", SearchOption.AllDirectories))
             {
                 var match = _regex.Match(filePath);
                 if (match.Success)
                 {
-                    // 此处直接使用最新版本, 后续再扩展为多版本
                     var version = match.Value;
                     if (version != "1.6")
                         continue;
                 }
+
                 try
                 {
                     var data = XmlConverter.Deserialize(File.ReadAllText(filePath));
                     if (data == null)
                         continue;
                     if (data.IsModMetaData)
+                    {
                         about = data;
+                        about.FilePath = filePath;
+                    }
                     else
+                    {
+                        data.FilePath = Path.GetRelativePath(mod, filePath);
                         modDefs.Add(data);
+                    }
                 }
                 catch (XmlException e)
                 {
-                    _log.LogError(e, "解析文件 {} 失败", filePath);
+                    _log.LogError(e, "解析文件 {} 失败, 可能此xml出现错误", filePath);
                     errorXmls.Add(filePath);
                 }
             }
-            _log.LogDebug("已解析Mod {} , 共有 {} 个定义",
+
+            _log.LogDebug("已解析Mod {ModCount} , 共有 {DefCount} 个定义",
                 about.Defs.FirstOrDefault(t => t.TagName == "packageId")?.Value
-                    ?? about.Defs.First(t => t.TagName == "name").Value,
+                ?? about.Defs.First(t => t.TagName == "name").Value,
                 modDefs.Count);
-            infos.Add(new(about, modDefs));
+            infos.Add(new ModInfo(about, modDefs));
         }
+
         _log.LogDebug("成功解析 {} 个mod, 解析失败 {} 个xml文件", infos.Count, errorXmls.Count);
         if (errorXmls.Count > 0)
         {
@@ -163,12 +182,14 @@ public class ModParser // 多线程标记
                 LastParseErrorXMLPaths = LastParseErrorXMLPaths?.Concat(errorXmls) ?? errorXmls;
         }
         else
+        {
             LastParseErrorXMLPaths = null;
+        }
     }
 
     private static void FiliterExistCache(List<string> path, List<ModInfo> infos)
     {
-        string cachePath = Path.Combine(TempConfig.AppPath, "cache");
+        var cachePath = Path.Combine(TempConfig.AppPath, "cache");
         var pending = new HashSet<string>(path);
 
         foreach (var item in Directory.EnumerateFiles(cachePath, "*.bin"))
@@ -192,23 +213,14 @@ public class ModParser // 多线程标记
     [MessagePackObject]
     public class ModInfo
     {
-        [Key(0)]
-        public RXStruct About { get; }
-
-        [Key(1)]
-        public IEnumerable<RXStruct> Defs { get; }
-
         public ModInfo(RXStruct about, IEnumerable<RXStruct> defs)
         {
             About = about;
             Defs = defs;
         }
-    }
 
-    public enum ParseRange
-    {
-        Core = 1,
-        DLC,
-        CommunityMod = 4
+        [Key(0)] public RXStruct About { get; }
+
+        [Key(1)] public IEnumerable<RXStruct> Defs { get; }
     }
 }

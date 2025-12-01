@@ -6,6 +6,7 @@
     <system:String x:Key="App_SelectGameRoot">请先设置游戏根目录</system:String>
 
     <!-- 主窗口 -->
+    <system:String x:Key="MainView_ParentLabel">可继承类</system:String>
     <system:String x:Key="MainView_ChildListInputLabel">子节点列表</system:String>
     <system:String x:Key="MainView_ChildListSearchWatermark">搜索子项...</system:String>
     <system:String x:Key="MainView_TexturePreviewLabel">贴图预览</system:String>

@@ -108,6 +108,7 @@ public static class XmlConverter
             {
                 genericInfo.ParentName = topLevelElement.Attribute("ParentName")?.Value ?? string.Empty;
                 genericInfo.IsAbstract = bool.TryParse(topLevelElement.Attribute("Abstract")?.Value, out var isAbstract) && isAbstract;
+                genericInfo.Name = topLevelElement.Attribute("Name")?.Value ?? string.Empty;
                 genericInfo.IgnoreConfigErrors = bool.TryParse(topLevelElement.Attribute("ignoreConfigErrors")?.Value, out var ignoreConfigErrors) && ignoreConfigErrors;
             }
             else
@@ -189,7 +190,8 @@ public static class XmlConverter
         var fieldInfo = new XmlFieldInfo
         {
             Name = element.Name.LocalName,
-            Ref = element.Attribute("Class")?.Value ?? string.Empty
+            Ref = element.Attribute("Class")?.Value ?? string.Empty,
+            TKey = element.Attribute("TKey")?.Value
         };
 
         bool isList = element.HasElements && (element.Elements().All(e => e.Name.LocalName == "li") ||

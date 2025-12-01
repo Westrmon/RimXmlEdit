@@ -1,5 +1,6 @@
 namespace RimXmlEdit.Core.Entries;
 
+[Flags]
 public enum XmlFieldType : byte
 {
     /// <summary>

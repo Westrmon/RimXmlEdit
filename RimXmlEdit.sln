@@ -11,6 +11,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RimXmlEdit.Core", "RimXmlEd
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Test", "Test", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "RimXmlEdit.Test", "RimXmlEdit.Test\RimXmlEdit.Test.csproj", "{308D72B2-B9C3-3CB7-8305-726223863286}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -29,9 +31,16 @@ Global
 		{A89EC21E-8069-4C20-8E24-265A44886FE3}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{A89EC21E-8069-4C20-8E24-265A44886FE3}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{A89EC21E-8069-4C20-8E24-265A44886FE3}.Release|Any CPU.Build.0 = Release|Any CPU
+		{308D72B2-B9C3-3CB7-8305-726223863286}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{308D72B2-B9C3-3CB7-8305-726223863286}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{308D72B2-B9C3-3CB7-8305-726223863286}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{308D72B2-B9C3-3CB7-8305-726223863286}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
+	EndGlobalSection
+	GlobalSection(NestedProjects) = preSolution
+		{308D72B2-B9C3-3CB7-8305-726223863286} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {DFD4DC77-398B-42AA-A71D-ECBCA58E012C}
