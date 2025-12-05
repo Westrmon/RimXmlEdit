@@ -107,9 +107,8 @@ public class NodeDefinitionDatabase
     {
         return Task.Run(() =>
         {
-            var options = MessagePackSerializerOptions.Standard.WithCompression(MessagePackCompression.Lz4BlockArray);
             using var fs = new FileStream(path, FileMode.Create, FileAccess.Write);
-            MessagePackSerializer.Serialize(fs, this, options);
+            MessagePackSerializer.Serialize(fs, this);
         });
     }
 
@@ -118,9 +117,8 @@ public class NodeDefinitionDatabase
         if (!File.Exists(path)) return new NodeDefinitionDatabase();
         try
         {
-            var options = MessagePackSerializerOptions.Standard.WithCompression(MessagePackCompression.Lz4BlockArray);
             using var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
-            var db = MessagePackSerializer.Deserialize<NodeDefinitionDatabase>(fs, options);
+            var db = MessagePackSerializer.Deserialize<NodeDefinitionDatabase>(fs);
             db.RebuildReverseLookup();
             return db;
         }

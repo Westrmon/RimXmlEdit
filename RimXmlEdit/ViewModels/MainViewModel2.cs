@@ -1,3 +1,7 @@
+using System;
+using System.Threading;
+using System.Threading.Tasks;
+using System.Timers;
 using Avalonia.Controls;
 using Microsoft.Extensions.Logging;
 using RimXmlEdit.Core.Extensions;
@@ -5,10 +9,6 @@ using RimXmlEdit.Core.NodeGeneration;
 using RimXmlEdit.Core.Utils;
 using RimXmlEdit.Models;
 using RimXmlEdit.Utils;
-using System;
-using System.Threading;
-using System.Threading.Tasks;
-using System.Timers;
 using static RimXmlEdit.Core.NodeInfoManager;
 
 namespace RimXmlEdit.ViewModels;
@@ -16,8 +16,8 @@ namespace RimXmlEdit.ViewModels;
 public partial class MainViewModel
 {
     private CancellationTokenSource? _debounceCts;
+    private readonly Lock _saveLock = new();
     private int _valueValidationInterval;
-    private Lock _saveLock = new Lock();
 
     // 进行初步验证输入值的合法性
     private async void CheckInputValue(object? sender, TextChangedEventArgs e)
@@ -113,10 +113,8 @@ public partial class MainViewModel
             node = new DefNode(blueprint.TagName, parent);
             node.AttributeChanged += HandleNodeAttributeChanged;
         }
-        if (blueprint.Value != null)
-        {
-            node.Value = blueprint.Value;
-        }
+
+        if (blueprint.Value != null) node.Value = blueprint.Value;
         foreach (var attr in blueprint.Attributes)
         {
             var attrVm = new DefAttributeViewModel(node, attr.Name, attr.Value)
@@ -126,6 +124,7 @@ public partial class MainViewModel
             };
             node.AddAttribute(attrVm);
         }
+
         foreach (var childBlueprint in blueprint.Children)
         {
             var childNode = BuildFromBlueprint(childBlueprint, node);
@@ -138,9 +137,7 @@ public partial class MainViewModel
     public void UpdataSetting()
     {
         if (_autoSaveTimer.Interval != _setting.AutoSaveInterval * 60000)
-        {
             _autoSaveTimer.Interval = _setting.AutoSaveInterval * 60000;
-        }
         _valueValidationInterval = _setting.ValueValidationInterval;
         LoggerFactoryInstance.SetLevels(_setting.FileLoggingLevel, _setting.NotificationLoggingLevel);
     }

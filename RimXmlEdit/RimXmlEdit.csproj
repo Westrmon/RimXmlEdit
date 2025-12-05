@@ -1,65 +1,70 @@
 ﻿<Project Sdk="Microsoft.NET.Sdk">
-  <PropertyGroup>
-    <TargetFramework>net9.0</TargetFramework>
-    <Nullable>enable</Nullable>
-    <LangVersion>latest</LangVersion>
-    <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
-	<EnableXamlCompilation Condition="'$(Configuration)' == 'Debug'">False</EnableXamlCompilation>
-  </PropertyGroup>
-  <PropertyGroup Label="Avalonia">
-    <AvaloniaXamlIlDebuggerLaunch>False</AvaloniaXamlIlDebuggerLaunch>
-    <EnableAvaloniaXamlCompilation>True</EnableAvaloniaXamlCompilation>
-    <AvaloniaNameGeneratorDefaultFieldModifier>Public</AvaloniaNameGeneratorDefaultFieldModifier>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
-    <IsTrimmable>False</IsTrimmable>
-    <IsAotCompatible>False</IsAotCompatible>
-  </PropertyGroup>
-  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
-    <IsTrimmable>False</IsTrimmable>
-    <IsAotCompatible>False</IsAotCompatible>
-  </PropertyGroup>
+    <PropertyGroup>
+        <TargetFramework>net9.0</TargetFramework>
+        <Nullable>enable</Nullable>
+        <LangVersion>latest</LangVersion>
+        <AvaloniaUseCompiledBindingsByDefault>true</AvaloniaUseCompiledBindingsByDefault>
+        <EnableXamlCompilation Condition="'$(Configuration)' == 'Debug'">False</EnableXamlCompilation>
+    </PropertyGroup>
+    <PropertyGroup Label="Avalonia">
+        <AvaloniaXamlIlDebuggerLaunch>False</AvaloniaXamlIlDebuggerLaunch>
+        <EnableAvaloniaXamlCompilation>True</EnableAvaloniaXamlCompilation>
+        <AvaloniaNameGeneratorDefaultFieldModifier>Public</AvaloniaNameGeneratorDefaultFieldModifier>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|AnyCPU'">
+        <IsTrimmable>False</IsTrimmable>
+        <IsAotCompatible>False</IsAotCompatible>
+    </PropertyGroup>
+    <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|AnyCPU'">
+        <IsTrimmable>False</IsTrimmable>
+        <IsAotCompatible>False</IsAotCompatible>
+    </PropertyGroup>
 
-  <ItemGroup>
-    <AvaloniaResource Include="Assets\**" />
-  </ItemGroup>
+    <ItemGroup>
+        <AvaloniaResource Include="Assets\**"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <AvaloniaResource Remove="Assets\folder.svg" />
-  </ItemGroup>
+    <ItemGroup>
+        <AvaloniaResource Remove="Assets\folder.svg"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <AvaloniaXaml Remove="Assets\icons\SvgIcon.axaml" />
-  </ItemGroup>
+    <ItemGroup>
+        <AvaloniaXaml Remove="Assets\icons\SvgIcon.axaml"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <PackageReference Include="Avalonia" Version="11.3.8" />
-    <PackageReference Include="Avalonia.AvaloniaEdit" Version="11.3.0" />
-    <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.8" />
-    <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.8" />
-    <PackageReference Include="AvaloniaEdit.TextMate" Version="11.3.0" />
-    <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0" />
+    <ItemGroup>
+        <PackageReference Include="Avalonia" Version="11.3.8"/>
+        <PackageReference Include="Avalonia.AvaloniaEdit" Version="11.3.0"/>
+        <PackageReference Include="Avalonia.Themes.Fluent" Version="11.3.8"/>
+        <PackageReference Include="Avalonia.Fonts.Inter" Version="11.3.8"/>
+        <PackageReference Include="AvaloniaEdit.TextMate" Version="11.3.0"/>
+        <PackageReference Include="CommunityToolkit.Mvvm" Version="8.4.0"/>
 
-    <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
-    <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.3.8" />
-    <PackageReference Include="DialogHost.Avalonia" Version="0.10.0" />
-    <PackageReference Include="Xaml.Behaviors.Interactions" Version="11.3.8.2" />
-    <PackageReference Include="Xaml.Behaviors.Interactivity" Version="11.3.8.2" />
-  </ItemGroup>
+        <!--Condition below is needed to remove Avalonia.Diagnostics package from build output in Release configuration.-->
+        <PackageReference Condition="'$(Configuration)' == 'Debug'" Include="Avalonia.Diagnostics" Version="11.3.8"/>
+        <PackageReference Include="DialogHost.Avalonia" Version="0.10.0"/>
+        <PackageReference Include="Xaml.Behaviors.Interactions" Version="11.3.8.2"/>
+        <PackageReference Include="Xaml.Behaviors.Interactivity" Version="11.3.8.2"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <ProjectReference Include="..\RimXmlEdit.Core\RimXmlEdit.Core.csproj" />
-  </ItemGroup>
+    <ItemGroup>
+        <ProjectReference Include="..\RimXmlEdit.Core\RimXmlEdit.Core.csproj"/>
+    </ItemGroup>
 
-  <ItemGroup>
-    <AvaloniaResource Update="Assets\icons\SvgIcon.axaml">
-      <SubType>Designer</SubType>
-    </AvaloniaResource>
-  </ItemGroup>
+    <ItemGroup>
+        <AvaloniaResource Update="Assets\icons\SvgIcon.axaml">
+            <SubType>Designer</SubType>
+        </AvaloniaResource>
+    </ItemGroup>
 
-  <ItemGroup>
-    <Compile Update="Views\DialogViews\CrashReportWindow.axaml.cs">
-      <DependentUpon>CrashReportWindow.axaml</DependentUpon>
-    </Compile>
-  </ItemGroup>
+    <ItemGroup>
+        <Compile Update="Views\DialogViews\CrashReportWindow.axaml.cs">
+            <DependentUpon>CrashReportWindow.axaml</DependentUpon>
+        </Compile>
+        <Compile Remove="Converter\FormatStringConverter.cs"/>
+    </ItemGroup>
+
+    <ItemGroup>
+        <Folder Include="CustomControl\"/>
+    </ItemGroup>
 </Project>

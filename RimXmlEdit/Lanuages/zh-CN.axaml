@@ -6,7 +6,7 @@
     <system:String x:Key="App_SelectGameRoot">请先设置游戏根目录</system:String>
 
     <!-- 主窗口 -->
-    <system:String x:Key="MainView_ParentLabel">可继承类</system:String>
+    <system:String x:Key="MainView_RootNodeLabel">根节点列表</system:String>
     <system:String x:Key="MainView_ChildListInputLabel">子节点列表</system:String>
     <system:String x:Key="MainView_ChildListSearchWatermark">搜索子项...</system:String>
     <system:String x:Key="MainView_TexturePreviewLabel">贴图预览</system:String>
@@ -20,6 +20,7 @@
     <system:String x:Key="MainView_Menu_Setting">设置</system:String>
     <system:String x:Key="MainView_Menu_About">关于</system:String>
     <system:String x:Key="MainView_FileExplorerTitle">文件资源管理器</system:String>
+    <system:String x:Key="MainView_CurrentSelectNodeName">当前节点</system:String>
 
     <system:String x:Key="TexturePreviewView_DragDropHint">拖入图片 / 暂无图层</system:String>
 

@@ -140,7 +140,7 @@ public class AIDefineGenerator
 
         try
         {
-            var responseString = _aiAssistant.AskAsync(sb.ToString()).Result;
+            var responseString = await _aiAssistant.AskAsync(sb.ToString());
             responseString = CleanJsonString(responseString);
             var result = JsonSerializer.Deserialize<Dictionary<string, string>>(responseString, _option);
             return result ?? new Dictionary<string, string>();

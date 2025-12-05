@@ -1,3 +1,4 @@
+using System;
 using Avalonia.Controls;
 using Avalonia.Controls.Notifications;
 using Avalonia.Input;
@@ -12,30 +13,22 @@ using Microsoft.Extensions.Logging;
 using RimXmlEdit.Core.Utils;
 using RimXmlEdit.Utils;
 using RimXmlEdit.ViewModels;
-using System;
 using TextMateSharp.Grammars;
 
 namespace RimXmlEdit.Views;
 
 public partial class MainWindow : Window
 {
-    public static event EventHandler<MultTappedEventArgs>? OnDoubleTapped;
-
-    public static event EventHandler<DialogClosingEventArgs>? OnDialogClosing;
-
-    public static event EventHandler<TextChangedEventArgs>? OnInputNodeValue;
-
-    private TextEditor _textEditor;
-
+    private readonly TextEditor _textEditor;
     private WindowNotificationManager? _notificationManager;
 
     public MainWindow()
     {
         InitializeComponent();
         _textEditor = this.FindControl<TextEditor>("TextEdit") ??
-            throw new ArgumentNullException(nameof(TextEditor));
+                      throw new ArgumentNullException(nameof(TextEditor));
         var search = this.FindControl<QuickSearchBox>("SearchBox") ??
-            throw new ArgumentNullException(nameof(TextEditor));
+                     throw new ArgumentNullException(nameof(TextEditor));
         _textEditor.IsReadOnly = false;
         _textEditor.Options.HighlightCurrentLine = true;
 
@@ -44,14 +37,20 @@ public partial class MainWindow : Window
         _textEditor.Options.WordWrapIndentation = 4;
 
         var theme = ActualThemeVariant == ThemeVariant.Light
-                    ? ThemeName.LightPlus
-                    : ThemeName.DarkPlus;
+            ? ThemeName.LightPlus
+            : ThemeName.DarkPlus;
         var options = new RegistryOptions(theme);
         var installation = _textEditor.InstallTextMate(options);
 
         installation.SetGrammar(options.GetScopeByLanguageId(options.GetLanguageByExtension(".xml").Id));
         search.DataContext = GlobalSingletonHelper.Service.GetRequiredService<QuickSearchBoxViewModel>();
     }
+
+    public static event EventHandler<MultTappedEventArgs>? OnDoubleTapped;
+
+    public static event EventHandler<DialogClosingEventArgs>? OnDialogClosing;
+
+    public static event EventHandler<TextChangedEventArgs>? OnInputNodeValue;
 
     protected override void OnLoaded(RoutedEventArgs e)
     {
@@ -76,10 +75,10 @@ public partial class MainWindow : Window
                 };
 
                 _notificationManager.Show(new Notification(
-                    title: level.ToString(),
-                    message: message,
-                    type: type,
-                    expiration: TimeSpan.FromSeconds(5)
+                    level.ToString(),
+                    message,
+                    type,
+                    TimeSpan.FromSeconds(5)
                 ));
             });
         };
@@ -108,11 +107,11 @@ public partial class MainWindow : Window
 
 public class MultTappedEventArgs : EventArgs
 {
-    public bool Handle { get; set; } = false;
-    public string SourceTypeName { get; }
-
     public MultTappedEventArgs(string sourceTypeName)
     {
         SourceTypeName = sourceTypeName;
     }
+
+    public bool Handle { get; set; } = false;
+    public string SourceTypeName { get; }
 }

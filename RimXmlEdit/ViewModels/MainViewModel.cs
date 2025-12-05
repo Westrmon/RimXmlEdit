@@ -41,18 +41,21 @@ public partial class MainViewModel : ViewModelBase
 
     private readonly AppSettings _setting;
 
+    private DefNode _beforeViewNode;
+
     [DefaultValue(true)] [ObservableProperty]
     private bool _canEditNodeDefine;
 
     private IEnumerable<string> _childNodes;
 
-    [ObservableProperty] private string _childSiderBarSelectItem;
-
-    private DefNode _childViewNode = DefNodeManager.RootNode;
+    [ObservableProperty] private string _childSideBarSelectItem;
+    [ObservableProperty] private DefNode _childViewNode = DefNodeManager.RootNode;
 
     [ObservableProperty] private string _currentDescription = string.Empty;
 
     private string _currentFilePath = string.Empty;
+
+    [ObservableProperty] private string _currentTabHeader = "节点编辑";
     private NodeDefineInfo _defDefineInfo;
 
     [ObservableProperty] private DefNode _defNode;
@@ -72,9 +75,9 @@ public partial class MainViewModel : ViewModelBase
 
     private string _searchDescNodeFullName = string.Empty;
 
-    private bool _xmlIsChanged;
+    [ObservableProperty] private string _selectedSide;
 
-    [ObservableProperty] private string currentTabHeader = "节点编辑";
+    private bool _xmlIsChanged;
 
     /// <summary>
     ///     Initializes a new instance of the <see cref="MainViewModel" /> class.
@@ -118,6 +121,7 @@ public partial class MainViewModel : ViewModelBase
                 return;
             }
 
+            SelectedSide = "root";
             _currentFilePath = e.FullName;
             _childViewNode = DefNodeManager.RootNode;
             _defManager.LoadFromExtendXml(_currentFilePath);
@@ -150,33 +154,43 @@ public partial class MainViewModel : ViewModelBase
 
     private void InsertNodeFromSideBar(string? insertNodeName = null)
     {
-        if (_childViewNode.IsError)
+        if (ChildViewNode.IsError)
         {
-            _childViewNode.IsError = false;
-            _childViewNode.ErrorMessage = null;
+            ChildViewNode.IsError = false;
+            ChildViewNode.ErrorMessage = null;
         }
+
+        var insertItemName = insertNodeName ?? ChildSideBarSelectItem;
+        if (string.IsNullOrWhiteSpace(insertItemName))
+            return;
 
         var blueprint = NodeGenerationService.Generate(
             DefNodeManager.IsPatch,
-            _childViewNode.TagName,
-            insertNodeName ?? ChildSiderBarSelectItem,
+            ChildViewNode.TagName,
+            insertItemName,
             string.Empty);
-        var node = BuildFromBlueprint(blueprint, _childViewNode);
+        var node = BuildFromBlueprint(blueprint, ChildViewNode);
         node.IsNodeExpanded = true;
         //DefNode node;
-        //if (_childViewNode.TagName == "comps")
+        //if (ChildViewNode.TagName == "comps")
         //{
-        //    node = new DefNode("li", _childViewNode);
-        //    node.AddAttribute(new DefAttributeViewModel(node, "Class", ChildSiderBarSelectItem));
+        //    node = new DefNode("li", ChildViewNode);
+        //    node.AddAttribute(new DefAttributeViewModel(node, "Class", ChildSideBarSelectItem));
         //}
         //else
         //{
-        //    node = new DefNode(ChildSiderBarSelectItem, _childViewNode);
+        //    node = new DefNode(ChildSideBarSelectItem, ChildViewNode);
         //}
-        if (_childViewNode == DefNodeManager.RootNode)
+        if (ChildViewNode == DefNodeManager.RootNode)
+        {
+            node.IsEditable = false;
             DefTreeNodes.Add(node);
+        }
         else
-            _childViewNode.Children.Add(node);
+        {
+            ChildViewNode.Children.Add(node);
+        }
+
         SearchChildText = string.Empty;
         FlushChildListAfterAdd();
     }
@@ -221,14 +235,14 @@ public partial class MainViewModel : ViewModelBase
         _isAddNodeToRoot = false;
         await Task.Run(() =>
         {
-            if (contextNode.TagName == "Root")
+            if (contextNode.TagName == "Root" || SelectedSide == "root")
             {
                 if (DefNodeManager.IsPatch)
                     childs = ["Operation"];
                 else
                     childs = _nodeInfoManager.GetRootList();
             }
-            else if (!DefNodeManager.IsPatch)
+            else if (!DefNodeManager.IsPatch && SelectedSide == "child")
             {
                 fullName = contextNode.GetFullName();
                 childs = _nodeInfoManager.GetChildNameOrEnumValues(fullName);
@@ -257,7 +271,7 @@ public partial class MainViewModel : ViewModelBase
                     }
                 }
             }
-            else
+            else if (SelectedSide == "child")
             {
                 childs = ["li", "value", "match", "operations", "xpath"];
             }
@@ -268,14 +282,20 @@ public partial class MainViewModel : ViewModelBase
         else
             _childNodes = childs.OrderBy(c => c);
         if (_childNodes.Any())
-            _childViewNode = contextNode;
+        {
+            if (SelectedSide == "child")
+                ChildViewNode = contextNode;
+            else
+                _beforeViewNode = contextNode;
+        }
+
         OnSearchChildTextChanged(SearchChildText);
     }
 
     [RelayCommand]
     private async Task AddNodeToRoot()
     {
-        _childViewNode = DefNodeManager.RootNode;
+        ChildViewNode = DefNodeManager.RootNode;
         _isAddNodeToRoot = true;
         await UpdateChildList();
     }
@@ -312,7 +332,7 @@ public partial class MainViewModel : ViewModelBase
         OnAutoSaveEvent(null, null);
         _currentFilePath = path;
 
-        _childViewNode = DefNodeManager.RootNode;
+        ChildViewNode = DefNodeManager.RootNode;
         _defManager.LoadFromExtendXml(path);
     }
 
@@ -366,6 +386,34 @@ public partial class MainViewModel : ViewModelBase
     }
 
     [RelayCommand]
+    private async Task SideBtnSelected(string name)
+    {
+        SelectedSide = name;
+
+        switch (name)
+        {
+            case "root":
+                _beforeViewNode = ChildViewNode;
+                ChildViewNode = DefNodeManager.RootNode;
+                await UpdateChildList();
+                break;
+            case "child":
+                ChildViewNode = _beforeViewNode;
+                await UpdateChildList();
+                break;
+        }
+    }
+
+    [RelayCommand]
+    private void JumpToCurrentNode()
+    {
+        if (ChildViewNode == DefNodeManager.RootNode)
+            return;
+
+        DefNode = ChildViewNode;
+    }
+
+    [RelayCommand]
     private void Exit()
     {
         Environment.Exit(0);
@@ -374,18 +422,18 @@ public partial class MainViewModel : ViewModelBase
 
     private void FlushChildListAfterAdd()
     {
-        _childNodes = _childNodes.Except(_childViewNode.Children.Select(t => t.TagName));
+        _childNodes = _childNodes.Except(ChildViewNode.Children.Select(t => t.TagName));
         OnSearchChildTextChanged(string.Empty);
     }
 
     // 点击子项后也可以加载描述
-    partial void OnChildSiderBarSelectItemChanged(string value)
+    partial void OnChildSideBarSelectItemChanged(string value)
     {
         var fullName = string.Empty;
-        if (_childViewNode == DefNodeManager.RootNode)
+        if (ChildViewNode == DefNodeManager.RootNode)
             fullName = value;
         else
-            fullName = $"{_childViewNode.GetFullName('.')}.{value}";
+            fullName = $"{ChildViewNode.GetFullName('.')}.{value}";
         UpdateDescription(fullName);
     }
 
@@ -398,7 +446,7 @@ public partial class MainViewModel : ViewModelBase
             {
                 _defManager.ConvertToDefNode(NodeXmlContent);
                 _xmlIsChanged = false;
-                _childViewNode = DefNodeManager.RootNode;
+                ChildViewNode = DefNodeManager.RootNode;
                 //_ = UpdataChildList();
             }
         }

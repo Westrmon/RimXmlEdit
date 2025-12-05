@@ -22,7 +22,7 @@
         Height="670" Width="1170">
     <dialogHost:DialogHost Identifier="RootDialogHost"
                            DialogClosing="DialogHost_DialogClosing">
-        <Grid RowDefinitions="Auto, *, 30">
+        <Grid RowDefinitions="Auto, *">
             <!-- Row 0: Menu Bar -->
             <Menu Grid.Row="0" Background="{DynamicResource Layer1BackgroundColor}">
                 <MenuItem Header="{DynamicResource MainView_Menu_File}">
@@ -51,6 +51,10 @@
                     <ColumnDefinition Width="3" />
                     <ColumnDefinition MinWidth="250" Width="250" />
                 </Grid.ColumnDefinitions>
+                <Grid.RowDefinitions>
+                    <RowDefinition Height="*" />
+                    <RowDefinition Height="30" MaxHeight="30" />
+                </Grid.RowDefinitions>
                 <Border BorderThickness="1"
                         MinWidth="180"
                         BorderBrush="{DynamicResource BorderBrush}">
@@ -86,13 +90,13 @@
                     </Grid>
                 </Border>
                 <!-- Column 1: Left Splitter -->
-                <GridSplitter Grid.Column="1"
+                <GridSplitter Grid.Row="0" Grid.Column="1"
                               Background="{DynamicResource BorderBrush}" />
-                <Button Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Top"
-                        Margin="0,10,13,5" Width="20" Height="20" Content="+" Padding="0"
-                        Command="{Binding AddNodeToRootCommand}" ZIndex="1" />
+                <!-- <Button Grid.Row="0" Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Top" -->
+                <!--         Margin="0,10,13,5" Width="20" Height="20" Content="+" Padding="0" -->
+                <!--         Command="{Binding AddNodeToRootCommand}" ZIndex="1" /> -->
                 <!-- Column 2: Center Content (Node Editing / XML Source) -->
-                <TabControl Grid.Column="2"
+                <TabControl Grid.Row="0" Grid.Column="2"
                             SelectedIndex="{Binding IsNodeEditingTabSelected, Converter={x:Static conv:BoolToIntegerConverter.Instance}}">
 
                     <!-- 节点编辑部分  -->
@@ -103,8 +107,6 @@
                                   AutoScrollToSelectedItem="True"
                                   ScrollViewer.AllowAutoHide="False"
                                   Background="{DynamicResource AppBackgroundColor}">
-                            <TreeView.Resources>
-                            </TreeView.Resources>
 
                             <TreeView.Styles>
                                 <Style Selector="StackPanel.error">
@@ -114,8 +116,11 @@
                                     <Setter Property="MinHeight" Value="30" />
                                     <Setter Property="IsExpanded" Value="{Binding IsNodeExpanded, Mode=TwoWay}" />
                                 </Style>
-                                <Style Selector="TreeViewItem:selected">
-                                    <Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}" />
+                                <Style Selector="TreeViewItem:selected /template/ Border">
+                                    <Setter Property="Background" Value="{DynamicResource XmlSelectedBackgroundBrush}" />
+                                </Style>
+                                <Style Selector="TreeViewItem:pointerover /template/ Border">
+                                    <Setter Property="Background" Value="{DynamicResource XmlHoverBackgroundColor}"/>
                                 </Style>
 
                                 <Style Selector="TextBox.attrBox">
@@ -130,7 +135,7 @@
 
                             <TreeView.KeyBindings>
                                 <KeyBinding Gesture="q" Command="{Binding UpdateChildListCommand}" />
-                                <KeyBinding Gesture="ctrl+s" Command="{Binding SaveCommand}"/>
+                                <KeyBinding Gesture="ctrl+s" Command="{Binding SaveCommand}" />
                             </TreeView.KeyBindings>
 
                             <TreeView.DataTemplates>
@@ -289,12 +294,12 @@
                     </TabItem>
                 </TabControl>
 
-                <GridSplitter Grid.Column="3"
+                <GridSplitter Grid.Row="0" Grid.Column="3"
                               HorizontalAlignment="Stretch"
                               VerticalAlignment="Stretch"
                               Background="{DynamicResource BorderBrush}" />
 
-                <Grid Grid.Column="4" Margin="14, 5" Grid.RowDefinitions="Auto, 20, *"
+                <Grid Grid.Row="0" Grid.Column="4" Margin="14, 5" Grid.RowDefinitions="Auto, 20, *"
                       Background="{DynamicResource Layer1BackgroundColor}">
                     <Grid.Styles>
                         <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
@@ -309,24 +314,40 @@
                              BorderBrush="{DynamicResource SeparatorBrush}"
                              Background="Transparent" Height="20"
                              Watermark="{DynamicResource MainView_ChildListSearchWatermark}" />
-                    <StackPanel Grid.Row="1" Orientation="Horizontal">
-                        <Border BorderThickness="0,0,0,0">
-                            <TextBlock Text="{DynamicResource MainView_ParentLabel}" Margin="0,0,0,5" FontWeight="Bold"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                    <StackPanel Grid.Row="1" Orientation="Horizontal" Spacing="10">
+                        <StackPanel.Styles>
+                            <Style Selector="Button TextBlock:pointerover">
+                                <Setter Property="Foreground" Value="{DynamicResource TextOnAccentColor}" />
+                            </Style>
+                            <Style Selector="Button TextBlock">
+                                <Setter Property="Foreground" Value="{DynamicResource TextSecondaryColor}" />
+                            </Style>
+                            <Style Selector="Button.select TextBlock">
+                                <Setter Property="Foreground" Value="{DynamicResource TextOnAccentColor}" />
+                            </Style>
+                        </StackPanel.Styles>
+                        <Button Margin="0" Padding="0" Background="Transparent"
+                                Command="{Binding SideBtnSelectedCommand}"
+                                Classes.select="{Binding SelectedSide, Converter={x:Static conv:StringEqualConverter.Instance}, ConverterParameter=root}"
+                                CommandParameter="root">
+                            <TextBlock Text="{DynamicResource MainView_RootNodeLabel}" Margin="0" FontWeight="Normal"
                                        VerticalAlignment="Bottom" />
-                        </Border>
-                        <Border BorderThickness="1,0,0,0">
-                            <TextBlock Text="{DynamicResource MainView_ChildListInputLabel}" Margin="5,0,0,5"
-                                       FontWeight="Bold"
-                                       Foreground="{DynamicResource TextPrimaryBrush}"
-                                       VerticalAlignment="Bottom" />
-                        </Border>
+                        </Button>
+                        <Separator HorizontalAlignment="Stretch" Width="1" Height="NAN" Margin="0,2,0,2"
+                                   Foreground="{DynamicResource SeparatorColor}" />
+                        <Button Margin="0" Padding="0" Background="Transparent"
+                                Command="{Binding SideBtnSelectedCommand}"
+                                CommandParameter="child"
+                                Classes.select="{Binding SelectedSide, Converter={x:Static conv:StringEqualConverter.Instance}, ConverterParameter=child}">
+                            <TextBlock Text="{DynamicResource MainView_ChildListInputLabel}" Margin="0"
+                                       FontWeight="Normal" VerticalAlignment="Bottom" />
+                        </Button>
                     </StackPanel>
                     <ListBox ItemsSource="{Binding FilteredChildItems}" MinHeight="125" Margin="0,0,0,5"
                              DoubleTapped="ListBox_DoubleTapped" Grid.Row="2"
                              ScrollViewer.HorizontalScrollBarVisibility="Auto"
                              ScrollViewer.VerticalScrollBarVisibility="Auto"
-                             SelectedItem="{Binding ChildSiderBarSelectItem, Mode=TwoWay}">
+                             SelectedItem="{Binding ChildSideBarSelectItem, Mode=TwoWay}">
                         <ListBox.ItemsPanel>
                             <ItemsPanelTemplate>
                                 <VirtualizingStackPanel ScrollViewer.AllowAutoHide="False" />
@@ -346,16 +367,34 @@
                         </ListBox.ItemTemplate>
                     </ListBox>
                 </Grid>
+
+                <TextBox Grid.ColumnSpan="3" Grid.Column="0" Grid.Row="1" Text="{Binding CurrentDescription}"
+                         TextWrapping="NoWrap" IsReadOnly="{Binding !CanEditNodeDefine}"
+                         Foreground="{DynamicResource TextPrimaryBrush}" MinHeight="0"
+                         Padding="5,5,0,0" CornerRadius="0" DoubleTapped="TextBox_DoubleTapped">
+                    <TextBox.KeyBindings>
+                        <KeyBinding Gesture="Enter"
+                                    Command="{Binding EditDescriptionCommand}" />
+                    </TextBox.KeyBindings>
+                </TextBox>
+                <StackPanel Grid.Row="1" Grid.Column="4" Orientation="Horizontal" Spacing="5">
+                    <StackPanel.Styles>
+                        <Style Selector="TextBlock#CurrentSelectName:pointerover">
+                            <Setter Property="Foreground" Value="{DynamicResource TextOnAccentColor}"/>
+                        </Style>
+                    </StackPanel.Styles>
+                    <TextBlock VerticalAlignment="Center"
+                               Text="{DynamicResource MainView_CurrentSelectNodeName}" />
+                    <TextBlock VerticalAlignment="Center" Cursor="Hand" x:Name="CurrentSelectName"
+                               Text="{Binding ChildViewNode.TagName}">
+                        <i:Interaction.Behaviors>
+                            <ia:EventTriggerBehavior EventName="PointerPressed">
+                                <ia:InvokeCommandAction Command="{Binding JumpToCurrentNodeCommand}" />
+                            </ia:EventTriggerBehavior>
+                        </i:Interaction.Behaviors>
+                    </TextBlock>
+                </StackPanel>
             </Grid>
-            <TextBox Grid.Row="2" Text="{Binding CurrentDescription}"
-                     TextWrapping="NoWrap" IsReadOnly="{Binding !CanEditNodeDefine}"
-                     Foreground="{DynamicResource TextPrimaryBrush}" MinHeight="0"
-                     Padding="5,5,0,0" CornerRadius="0" DoubleTapped="TextBox_DoubleTapped">
-                <TextBox.KeyBindings>
-                    <KeyBinding Gesture="Enter"
-                                Command="{Binding EditDescriptionCommand}" />
-                </TextBox.KeyBindings>
-            </TextBox>
         </Grid>
     </dialogHost:DialogHost>
 </Window>

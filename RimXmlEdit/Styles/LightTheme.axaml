@@ -54,7 +54,7 @@
 			<!-- 值：孔雀蓝 -->
 			<Color x:Key="XmlValueColor">#006699</Color>
 			<!-- 代码选中背景：同通用选中背景，确保反白文字清晰 -->
-			<Color x:Key="XmlSelectedBackgroundColor">#296E9B</Color>
+			<Color x:Key="XmlSelectedBackgroundColor">#91CAF8</Color>
 			<Color x:Key="XmlHoverBackgroundColor">#E8EFF5</Color>
 
 			<!-- 错误相关 -->
