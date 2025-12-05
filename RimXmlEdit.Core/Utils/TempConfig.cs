@@ -28,7 +28,7 @@ public class TempConfig
 
     public static string ProjectPath
     {
-        get => _projectPath ?? throw new ArgumentNullException("No project path is set");
+        get => _projectPath ?? throw new ArgumentNullException($"No project path is set");
         set
         {
             _projectPath = value;

@@ -1,6 +1,7 @@
-using RimXmlEdit.Core.Utils;
 using System.Text.Json;
 using System.Text.Json.Serialization;
+using RimXmlEdit.Core.AI;
+using RimXmlEdit.Core.Utils;
 using static RimXmlEdit.Core.Utils.LoggerFactoryInstance;
 
 namespace RimXmlEdit.Core;
@@ -27,15 +28,18 @@ public class AppSettings
 
     public string Language { get; set; } = "zh-CN";
 
+    public Ai AI { get; set; } = new();
+
     public List<RecentPorjectsItem> RecentProjects { get; set; } = [];
+
+    [JsonIgnore] public RecentPorjectsItem CurrentProject { get; set; } = null;
 
     public static event Action? OnSettingChanged;
 
-    [JsonIgnore]
-    public RecentPorjectsItem CurrentProject { get; set; } = null;
-
-    internal void UpdataSetting()
-        => OnSettingChanged?.Invoke();
+    internal void UpdateSetting()
+    {
+        OnSettingChanged?.Invoke();
+    }
 }
 
 public class RecentPorjectsItem
@@ -45,9 +49,22 @@ public class RecentPorjectsItem
     public List<string> DependentPaths { get; set; } = [];
 }
 
+public class Ai
+{
+    public AiProvider AIProvider { get; set; }
+    public string ModelId { get; set; } = string.Empty;
+    public string ApiKey { get; set; } = string.Empty;
+    public string Endpoint { get; set; } = string.Empty;
+    public string AiPromptForGenNodeString { get; set; } = string.Empty;
+    public string AiPromptForTransNodeString { get; set; } = string.Empty;
+    public string AiPromptForDefineString { get; set; } = string.Empty;
+}
+
 [JsonSerializable(typeof(int))]
 [JsonSerializable(typeof(string))]
 [JsonSerializable(typeof(bool))]
+[JsonSerializable(typeof(Ai))]
+[JsonSerializable(typeof(AiProvider))]
 [JsonSerializable(typeof(LogLevelConfig))]
 [JsonSerializable(typeof(List<string>))]
 [JsonSerializable(typeof(List<RecentPorjectsItem>))]
@@ -59,7 +76,7 @@ internal partial class SourceGenerationContext : JsonSerializerContext
 
 public static class AppSettingsExtensions
 {
-    private static JsonSerializerOptions _option = new JsonSerializerOptions
+    private static readonly JsonSerializerOptions _option = new()
     {
         WriteIndented = true,
         IndentSize = 4,
@@ -73,6 +90,6 @@ public static class AppSettingsExtensions
         using var stream = File.Open(TempConfig.ConfigPath, FileMode.Create, FileAccess.Write);
         using var writer = new StreamWriter(stream);
         writer.WriteAsync(json);
-        settings.UpdataSetting();
+        settings.UpdateSetting();
     }
 }

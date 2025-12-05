@@ -11,13 +11,14 @@
     <system:String x:Key="MainView_TexturePreviewLabel">Texture Preview</system:String>
     <system:String x:Key="MainView_EditNodeTab">Edit Node</system:String>
     <system:String x:Key="MainView_XMLSourceFileTab">XML Source File</system:String>
-	<system:String x:Key="MainView_Menu_File">File</system:String>
-	<system:String x:Key="MainView_Menu_ImportXML">Import XML...</system:String>
-	<system:String x:Key="MainView_Menu_ImportDLL">Import DLL...</system:String>
-	<system:String x:Key="MainView_Menu_Exit">Exit</system:String>
-	<system:String x:Key="MainView_Menu_Setting">Settings</system:String>
-	<system:String x:Key="MainView_Menu_About">About</system:String>
-	<system:String x:Key="MainView_FileExplorerTitle">File Explorer</system:String>
+    <system:String x:Key="MainView_Menu_File">File</system:String>
+    <system:String x:Key="MainView_Menu_Save">Save</system:String>
+    <system:String x:Key="MainView_Menu_ImportXML">Import XML...</system:String>
+    <system:String x:Key="MainView_Menu_ImportDLL">Import DLL...</system:String>
+    <system:String x:Key="MainView_Menu_Exit">Exit</system:String>
+    <system:String x:Key="MainView_Menu_Setting">Settings</system:String>
+    <system:String x:Key="MainView_Menu_About">About</system:String>
+    <system:String x:Key="MainView_FileExplorerTitle">File Explorer</system:String>
 
     <system:String x:Key="TexturePreviewView_DragDropHint">Drag image here / No layers available</system:String>
 
@@ -53,10 +54,10 @@
     <system:String x:Key="CreateNewProject_LoadLabel">Load Order (Optional)</system:String>
     <system:String x:Key="CreateNewProject_CreateButton">Create</system:String>
     <system:String x:Key="SettingsView_GeneralSettings">General Settings</system:String>
-	<system:String x:Key="SettingsView_CancelButton">Cancel</system:String>
-	<system:String x:Key="SettingsView_Save">Save Settings</system:String>
-	
+    <system:String x:Key="SettingsView_CancelButton">Cancel</system:String>
+    <system:String x:Key="SettingsView_Save">Save Settings</system:String>
+
     <system:String x:Key="MsEmbeddedView_SetFileName">Set File Name</system:String>
     <system:String x:Key="MsEmbeddedView_IsFolder">Is Folder</system:String>
-    
+
 </ResourceDictionary>

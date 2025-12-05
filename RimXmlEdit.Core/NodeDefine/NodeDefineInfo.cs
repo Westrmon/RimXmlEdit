@@ -1,28 +1,28 @@
-using RimXmlEdit.Core.AI;
+using System.Text.RegularExpressions;
 using RimXmlEdit.Core.Entries;
 using RimXmlEdit.Core.Utils;
-using System.Text.RegularExpressions;
 
-namespace RimXmlEdit.Core;
+namespace RimXmlEdit.Core.NodeDefine;
 
 public partial class NodeDefineInfo
 {
-    private string _lang;
-    private string _mainDbPath;
-    private readonly string _baseDir;
-    private NodeDefinitionDatabase _globalDb;
-
-    private readonly List<TypeSchema> Schemas;
     private const int MaxDepth = 2;
     private static readonly Regex DigitRegex = FiliterDigit();
+    private readonly AppSettings _appSettings;
+    private readonly string _baseDir;
 
-    public NodeDefineInfo(DefCache cache, string lang = "zh_CN")
+    private readonly List<TypeSchema> Schemas;
+    private NodeDefinitionDatabase _globalDb;
+    private string _lang;
+    private string _mainDbPath;
+
+    public NodeDefineInfo(AppSettings appSettings, DefCache cache, string lang = "zh_CN")
     {
         _lang = lang;
+        _appSettings = appSettings;
         _baseDir = Path.Combine(TempConfig.AppPath, "NodeDefine");
         _mainDbPath = Path.Combine(_baseDir, $"rimworld_{_lang}.db.bin");
         Schemas = cache.Schemas;
-        Init();
     }
 
     public void Init()
@@ -34,6 +34,7 @@ public partial class NodeDefineInfo
             var mainDb = NodeDefinitionDatabase.LoadFromFile(_mainDbPath);
             _globalDb.MergeWith(mainDb, true);
         }
+
         var files = Directory.GetFiles(_baseDir, $"*_{_lang}.db.bin");
         foreach (var file in files)
         {
@@ -43,18 +44,19 @@ public partial class NodeDefineInfo
                 var modDb = NodeDefinitionDatabase.LoadFromFile(file);
                 _globalDb.MergeWith(modDb, true);
             }
-            catch { }
+            catch (Exception ex)
+            {
+            }
         }
     }
 
     public void AddItem(string modName)
     {
-        string dbPath = Path.Combine(_baseDir, $"{modName}_{_lang}.db.bin");
-        if (File.Exists(dbPath))
-        {
-            var mainDb = NodeDefinitionDatabase.LoadFromFile(_mainDbPath);
-            _globalDb.MergeWith(mainDb, true);
-        }
+        var dbPath = Path.Combine(_baseDir, $"{modName}_{_lang}.db.bin");
+        if (!File.Exists(dbPath)) return;
+
+        var mainDb = NodeDefinitionDatabase.LoadFromFile(_mainDbPath);
+        _globalDb.MergeWith(mainDb, true);
     }
 
     public void ChangeCulture(string lang)
@@ -64,11 +66,20 @@ public partial class NodeDefineInfo
         Init();
     }
 
-    public string GetDefine(string nodeName) => _globalDb.GetDescription(nodeName);
+    public string GetDefine(string nodeName)
+    {
+        return _globalDb.GetDescription(nodeName);
+    }
 
-    public void UpdateDefine(string nodeName, string newDesc) => _globalDb.SetDescription(nodeName, newDesc);
+    public void UpdateDefine(string nodeName, string newDesc)
+    {
+        _globalDb.SetDescription(nodeName, newDesc);
+    }
 
-    public void Save() => _globalDb.SaveToFileAsync(_mainDbPath);
+    public void Save()
+    {
+        _globalDb.SaveToFileAsync(_mainDbPath);
+    }
 
     public void CreateModDefineFile(
         RXStruct? structDefine,
@@ -77,47 +88,45 @@ public partial class NodeDefineInfo
     {
         if (structDefine == null || structDefine.Defs == null) return;
 
-        string fileName = $"{modName}.db.bin";
-        string targetPath = outputPath ?? Path.Combine(TempConfig.AppPath, "NodeDefine", fileName);
+        var fileName = $"{modName}_{_lang}.db.bin";
+        var targetPath = outputPath ?? Path.Combine(TempConfig.AppPath, "NodeDefine", fileName);
         var modDb = new NodeDefinitionDatabase();
         if (File.Exists(targetPath))
         {
             var existing = NodeDefinitionDatabase.LoadFromFile(targetPath);
             modDb.MergeWith(existing, true);
         }
+
         var globalSchemas = Schemas ?? new List<TypeSchema>();
 
         var visitedSchemas = new HashSet<int>();
         foreach (var def in structDefine.Defs)
         {
             if (IsSystemOrUnity(def.FullName)) continue;
-            if (string.IsNullOrEmpty(modDb.GetDescription(def.TagName)))
-            {
-                modDb.SetDescription(def.TagName, "");
-            }
+            if (string.IsNullOrEmpty(modDb.GetDescription(def.TagName))) modDb.SetDescription(def.TagName, "");
 
             visitedSchemas.Clear();
             CollectFieldsRecursive(modDb, def.Fields, globalSchemas, visitedSchemas, 1, def.TagName);
         }
+
         Directory.CreateDirectory(Path.GetDirectoryName(targetPath)!);
         modDb.SaveToFileAsync(targetPath);
     }
 
-    public async Task AutoFillDescriptionsWithAI(string apiKey, string endpoint, string model, string? targetModName = null)
+    public async Task AutoFillDescriptionsWithAi(string? targetModName = null)
     {
-        var ai = new AIGenerator(apiKey, endpoint, model);
-
+        var ai = new AIDefineGenerator(_appSettings);
         NodeDefinitionDatabase targetDb;
-
         if (string.IsNullOrEmpty(targetModName))
         {
             targetDb = _globalDb;
         }
         else
         {
-            string path = Path.Combine(_baseDir, $"{targetModName}.db.bin");
+            var path = Path.Combine(_baseDir, $"{targetModName}_{_lang}.db.bin");
             targetDb = NodeDefinitionDatabase.LoadFromFile(path);
         }
+
         var schemas = Schemas ?? new List<TypeSchema>();
 
         await ai.GenerateDescriptionsForDbAsync(targetDb, schemas);
@@ -127,7 +136,7 @@ public partial class NodeDefineInfo
         }
         else
         {
-            string path = Path.Combine(_baseDir, $"{targetModName}.db.bin");
+            var path = Path.Combine(_baseDir, $"{targetModName}_{_lang}.db.bin");
             await targetDb.SaveToFileAsync(path);
             _globalDb.MergeWith(targetDb, true);
         }
@@ -149,30 +158,24 @@ public partial class NodeDefineInfo
         foreach (var field in fields)
         {
             if (IsSystemOrUnity(field.FieldTypeName)) continue;
-            string normalizedKey = GetNormalizedKey(field.Name);
+            var normalizedKey = GetNormalizedKey(field.Name);
             if (processedPatterns.Contains(normalizedKey)) continue;
             processedPatterns.Add(normalizedKey);
 
-            string currentPath = $"{parentPath}.{field.Name}";
-            if (!db.NodeMap.ContainsKey(currentPath))
-            {
-                db.SetDescription(currentPath, "");
-            }
-            bool expanded = false;
+            var currentPath = $"{parentPath}.{field.Name}";
+            if (!db.NodeMap.ContainsKey(currentPath)) db.SetDescription(currentPath, "");
+            var expanded = false;
             if (currentDepth < MaxDepth && field.SchemaId >= 0 && field.SchemaId < schemas.Count)
-            {
-                if (!visitedSchemas.Contains(field.SchemaId))
+                if (visitedSchemas.Add(field.SchemaId))
                 {
-                    visitedSchemas.Add(field.SchemaId);
-                    CollectFieldsRecursive(db, schemas[field.SchemaId].Fields, schemas, visitedSchemas, currentDepth + 1, currentPath);
+                    CollectFieldsRecursive(db, schemas[field.SchemaId].Fields, schemas, visitedSchemas,
+                        currentDepth + 1, currentPath);
                     visitedSchemas.Remove(field.SchemaId);
                     expanded = true;
                 }
-            }
+
             if (!expanded && field.Children != null && field.Children.Count > 0)
-            {
                 CollectFieldsRecursive(db, field.Children, schemas, visitedSchemas, currentDepth + 1, currentPath);
-            }
         }
     }
 
@@ -188,8 +191,7 @@ public partial class NodeDefineInfo
         if (typeName[0] == 'S' && typeName.StartsWith("System")) return true;
         if (typeName[0] == 'U' && typeName.StartsWith("UnityEngine")) return true;
         if (typeName.Contains("<System") || typeName.Contains("<UnityEngine")) return true;
-        if (typeName == "String" || typeName == "Int32" || typeName == "Boolean" || typeName == "Single") return true;
-        return false;
+        return typeName is "String" or "Int32" or "Boolean" or "Single";
     }
 
     [GeneratedRegex(@"\d+", RegexOptions.Compiled)]

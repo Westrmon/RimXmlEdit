@@ -1,14 +1,16 @@
+using System.Diagnostics;
 using MessagePack;
 using MessagePack.Formatters;
 using MessagePack.Resolvers;
 using RimXmlEdit.Core;
+using RimXmlEdit.Core.AI;
 using RimXmlEdit.Core.Entries;
 using RimXmlEdit.Core.Extensions;
+using RimXmlEdit.Core.NodeDefine;
 using RimXmlEdit.Core.NodeGeneration;
 using RimXmlEdit.Core.Parse;
-using RimXmlEdit.Core.Utils;
-using System.Diagnostics;
 using RimXmlEdit.Core.Trans;
+using RimXmlEdit.Core.Utils;
 
 namespace RimXmlEdit.Test;
 
@@ -16,14 +18,14 @@ public class Program
 {
     public static void Main(string[] args)
     {
-        string vs = @"D:\steam\steamapps\common";
+        var vs = @"D:\steam\steamapps\common";
         TempConfig.GamePath = @"D:\steam\steamapps\common\RimWorld";
         MessagePackSerializer.DefaultOptions = MessagePackSerializerOptions.Standard
-                       .WithResolver(CompositeResolver.Create(
-                            new IMessagePackFormatter[] { new ObjectFieldInfoFormatter() },
-                            new IFormatterResolver[] { StandardResolver.Instance }))
-                       .WithCompression(MessagePackCompression.Lz4Block);
-        Test6();
+            .WithResolver(CompositeResolver.Create(
+                new IMessagePackFormatter[] { new ObjectFieldInfoFormatter() },
+                new IFormatterResolver[] { StandardResolver.Instance }))
+            .WithCompression(MessagePackCompression.Lz4Block);
+        Test11();
     }
 
     private static void Test1()
@@ -31,12 +33,12 @@ public class Program
         var s = new DefParser();
         s.Init();
         var process = Process.GetCurrentProcess();
-        System.Console.WriteLine($"物理内存占用: {process.WorkingSet64 / 1024 / 1024} MB");
-        System.Console.WriteLine($"私有内存占用: {process.PrivateMemorySize64 / 1024 / 1024} MB");
+        Console.WriteLine($"物理内存占用: {process.WorkingSet64 / 1024 / 1024} MB");
+        Console.WriteLine($"私有内存占用: {process.PrivateMemorySize64 / 1024 / 1024} MB");
         var ds2 = s.Parse(true);
         var process2 = Process.GetCurrentProcess();
-        System.Console.WriteLine($"物理内存占用: {process2.WorkingSet64 / 1024 / 1024} MB");
-        System.Console.WriteLine($"私有内存占用: {process2.PrivateMemorySize64 / 1024 / 1024} MB");
+        Console.WriteLine($"物理内存占用: {process2.WorkingSet64 / 1024 / 1024} MB");
+        Console.WriteLine($"私有内存占用: {process2.PrivateMemorySize64 / 1024 / 1024} MB");
         var graphicData = ds2.DefInfos.First(t => t.TagName == "ThingDef").Fields.First(t => t.Name == "graphicData");
         var sd = graphicData.ResolveChildren(ds2.Schemas);
     }
@@ -65,12 +67,27 @@ public class Program
 
     private static async void Test3()
     {
+        var appsetting = new AppSettings();
+        using var ft = File.OpenText("AiTest.txt");
+        var content = ft.ReadToEnd().Split('\n').Select(t => t.Split('=').Last().Trim()).ToArray();
+        appsetting.AI.Endpoint = content[0];
+        appsetting.AI.ModelId = content[1];
+        appsetting.AI.ApiKey = content[2];
+        var prompt = "你是一个 RimWorld 模组 XML 专家。请根据 XML 节点路径和 C# 数据类型，解释该节点的作用。" +
+                     "要求：中文，简练(30字内)，必须且只能返回纯 JSON 格式 (Key=路径, Value=描述)，不要包含 Markdown 代码块标记。待处理列表：";
+        var sets = "你是一个只输出 JSON 的 API 接口。";
+        appsetting.AI.AiPromptForDefineString = prompt + sets;
+        appsetting.AI.AIProvider = AiProvider.OpenAI;
         NodeInfoManager manager = new(null);
         manager.Init();
-        NodeDefineInfo defineInfo = new NodeDefineInfo(manager.DataCache);
-        var s = new RXStruct() { Defs = manager.DataCache.DefInfos };
-        defineInfo.CreateModDefineFile(s, "office");
-        while (true) { }
+        var defineInfo = new NodeDefineInfo(appsetting, manager.DataCache);
+        defineInfo.Init();
+        var s = new RXStruct { Defs = manager.DataCache.DefInfos };
+        // defineInfo.CreateModDefineFile(s, "office");
+        await defineInfo.AutoFillDescriptionsWithAi();
+        while (true)
+        {
+        }
     }
 
     private static void Test4()
@@ -83,31 +100,28 @@ public class Program
     // 比较dll标签和实际所用标签的差异
     private static void Test5()
     {
-        var modInfo = new ModParser().Parse(["D:\\steam\\steamapps\\common\\RimWorld\\Mods", "D:\\steam\\steamapps\\workshop\\content\\294100"],
+        var modInfo = new ModParser().Parse(
+            ["D:\\steam\\steamapps\\common\\RimWorld\\Mods", "D:\\steam\\steamapps\\workshop\\content\\294100"],
             ModParser.ParseRange.Core | ModParser.ParseRange.DLC);
         var parse = new DefParser();
         parse.Init();
         var defInfo = parse.Parse();
         parse.Init("");
-        LoggerFactoryInstance.SetLevels(LoggerFactoryInstance.LogLevelConfig.Error, LoggerFactoryInstance.LogLevelConfig.Error);
+        LoggerFactoryInstance.SetLevels(LoggerFactoryInstance.LogLevelConfig.Error,
+            LoggerFactoryInstance.LogLevelConfig.Error);
         List<DefInfo> used = new();
 
         var ds = modInfo.SelectMany(m => m.Defs)
-                        .SelectMany(d => d.Defs)
-                        .GroupBy(t => t.TagName.Split('_')[0])
-                        .Select(g => new { Name = g.Key, Count = g.Count() })
-                        .OrderBy(c => c.Count);
-        foreach (var i in ds)
-        {
-            System.Console.WriteLine(i.Name + " => " + i.Count);
-        }
+            .SelectMany(d => d.Defs)
+            .GroupBy(t => t.TagName.Split('_')[0])
+            .Select(g => new { Name = g.Key, Count = g.Count() })
+            .OrderBy(c => c.Count);
+        foreach (var i in ds) Console.WriteLine(i.Name + " => " + i.Count);
         var names = ds.Select(t => t.Name);
         var sdf = defInfo.DefInfos.Where(t => !names.Contains(t.TagName));
         foreach (var i in sdf)
-        {
             if (i.TagName.EndsWith("Def"))
-                System.Console.WriteLine(i.TagName);
-        }
+                Console.WriteLine(i.TagName);
     }
 
     private static void Test5_1()
@@ -119,7 +133,7 @@ public class Program
         var data = parse.DataCache;
         var race = data.DefInfos.First(f => f.TagName == "ThingDef_AlienRace");
         var s = race.Fields.First(f => f.Name == "alienRace").ResolveChildren(data.Schemas);
-        System.Console.WriteLine(s.Count);
+        Console.WriteLine(s.Count);
     }
 
     private static void Test6()
@@ -129,11 +143,11 @@ public class Program
         manager.AddDll(@"D:\steam\steamapps\workshop\content\294100\839005762\1.6\Assemblies\AlienRace.dll");
         manager.AddDll(@"D:\steam\steamapps\workshop\content\294100\3032870787\1.6\Assemblies\WarCrimesExpanded2.dll");
         // var s = manager.GetNodeByDefName("VoidMonolith");
-        ModParser parser = new ModParser();
-        string modRootPath = @"D:\Desktop\2844129100";
-        string langPath = @"D:\steam\steamapps\workshop\content\294100\2847942445\1.6";
+        var parser = new ModParser();
+        var modRootPath = @"D:\Desktop\2844129100";
+        var langPath = @"D:\steam\steamapps\workshop\content\294100\2847942445\1.6";
         // string modRootPath = @"D:\Desktop\New folder";
-        TransNode nodes = new TransNode(parser, manager);
+        var nodes = new TransNode(parser, manager);
         nodes.TransInit(modRootPath, "ChineseSimplified");
         var trans = nodes.GetTransToken();
         // nodes.TransInit(mod2, "ChineseSimplified");
@@ -153,7 +167,7 @@ public class Program
         var manager = new NodeInfoManager(null);
         manager.Init();
         var s = manager.GetChildList("ThingDef");
-        System.Console.WriteLine(s.Count());
+        Console.WriteLine(s.Count());
         var s2 = manager.GetChildList("ThingDef/containedItemsSelectable");
         manager.GetChildList("TestNode/TestNode2");
         manager.GetChildList("AnimationDef/loopMode");
@@ -163,16 +177,16 @@ public class Program
     {
         var manager = new NodeInfoManager(null);
         manager.Init();
-        string a1 = "TestNode/TestNode2";
-        string va1 = "55";
-        System.Console.WriteLine(a1 + " => " + manager.CheckValueIsValid(a1, va1).ToString());
-        string a2 = "AnimationDef/loopMode";
-        string va2 = "Clamp";
-        System.Console.WriteLine(a2 + " => " + manager.CheckValueIsValid(a2, va2).ToString());
-        string a3 = "ApparelProperties/careIfDamaged";
-        string va3 = "55";
-        System.Console.WriteLine(a3 + " => " + manager.CheckValueIsValid(a3, va3).ToString());
-        System.Console.WriteLine(a3 + " => " + manager.CheckValueIsValid(a3, "true").ToString());
+        var a1 = "TestNode/TestNode2";
+        var va1 = "55";
+        Console.WriteLine(a1 + " => " + manager.CheckValueIsValid(a1, va1));
+        var a2 = "AnimationDef/loopMode";
+        var va2 = "Clamp";
+        Console.WriteLine(a2 + " => " + manager.CheckValueIsValid(a2, va2));
+        var a3 = "ApparelProperties/careIfDamaged";
+        var va3 = "55";
+        Console.WriteLine(a3 + " => " + manager.CheckValueIsValid(a3, va3));
+        Console.WriteLine(a3 + " => " + manager.CheckValueIsValid(a3, "true"));
     }
 
     private static void Test9()
@@ -186,39 +200,43 @@ public class Program
             UseParallelProcessing = true,
             MatchType = SearchType.WholeWord
         });
-        foreach (var item in results)
-        {
-            System.Console.WriteLine(item);
-        }
+        foreach (var item in results) Console.WriteLine(item);
     }
 
     private static void Test10()
     {
-        NodeGenerationService t = new NodeGenerationService();
+        var t = new NodeGenerationService();
         var node = t.Generate(false, "Defs", "ThingDef", "ThingDef");
     }
 
-    private static void CheckDiff(IEnumerable<TransToken> tokens, Dictionary<string,string> ex)
+    private static void Test11()
+    {
+        var manager = new ExampleXmlManager();
+        manager.Init();
+        var list = manager.GetExampleXmlList();
+        var types = manager.GetAllTemplateType();
+        var fi = manager.GetFilterInfos(list.First().Key);
+        var blue = manager.CreateBlueprint(list.First().Key);
+    }
+
+    private static void Test12()
+    {
+    }
+
+    private static void CheckDiff(IEnumerable<TransToken> tokens, Dictionary<string, string> ex)
     {
         var item1 = tokens.Select(t => t.Key).ToHashSet();
         var item2 = ex.Keys.Select(k => k).ToHashSet();
         foreach (var item in ex)
-        {
             if (item.Value == "TODO")
                 item2.Remove(item.Key);
-        }
-        
+
         foreach (var item in item1.ToList())
-        {
             if (item2.Remove(item))
                 item1.Remove(item);
-        }
-        
-        Dictionary<string,string> temp = new Dictionary<string,string>();
-        foreach (var item in item2)
-        {
-            temp.Add(item, ex[item]);
-        }
+
+        var temp = new Dictionary<string, string>();
+        foreach (var item in item2) temp.Add(item, ex[item]);
         Console.WriteLine(item1.Count);
         Console.WriteLine(temp.Count);
     }

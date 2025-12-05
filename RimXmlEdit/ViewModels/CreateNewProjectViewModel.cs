@@ -1,3 +1,11 @@
+using System;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.ComponentModel;
+using System.IO;
+using System.Linq;
+using System.Text.RegularExpressions;
+using System.Threading.Tasks;
 using Avalonia.Platform.Storage;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -10,14 +18,6 @@ using RimXmlEdit.Core.Extensions;
 using RimXmlEdit.Core.Utils;
 using RimXmlEdit.Models;
 using RimXmlEdit.Utils;
-using System;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.ComponentModel;
-using System.IO;
-using System.Linq;
-using System.Text.RegularExpressions;
-using System.Threading.Tasks;
 
 namespace RimXmlEdit.ViewModels;
 
@@ -27,12 +27,41 @@ public partial class CreateNewProjectViewModel : ViewModelBase
 {
     private readonly ILogger _logger;
 
-    [ObservableProperty]
-    private string _author;
+    [ObservableProperty] private string _author;
 
-    [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(CreateProjectCommand))]
+    [ObservableProperty] private string _modIconPath;
+
+    [ObservableProperty] private string? _projectDescription;
+
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(CreateProjectCommand))]
+    private string? _projectLocation;
+
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(CreateProjectCommand))]
     private string? _projectName;
+
+    [ObservableProperty] [NotifyCanExecuteChangedFor(nameof(CreateProjectCommand))]
+    private ProjectTemplate? _selectedTemplate;
+
+    private readonly AppSettings _settings;
+
+    public CreateNewProjectViewModel(IOptions<AppSettings> options)
+    {
+        _logger = this.Log();
+        _settings = options.Value;
+        var author = _settings.Author;
+        if (!string.IsNullOrEmpty(author))
+            Author = author;
+        Templates = new ObservableCollection<ProjectTemplate>
+        {
+            new("普通 (Normal)")
+        };
+        InitializeData();
+        SelectedTemplate = Templates.FirstOrDefault();
+        PropertyChanged += OnAuthorOrProjectNameChanged;
+        GameVersions.Add(new GameVersionCheckItem { DisplayName = "1.6", IsSelected = true });
+        GameVersions.Add(new GameVersionCheckItem { DisplayName = "1.5" });
+        GameVersions.Add(new GameVersionCheckItem { DisplayName = "1.4" });
+    }
 
     public string PackageId
     {
@@ -45,20 +74,6 @@ public partial class CreateNewProjectViewModel : ViewModelBase
         }
     }
 
-    [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(CreateProjectCommand))]
-    private string? _projectLocation;
-
-    [ObservableProperty]
-    private string? _projectDescription;
-
-    [ObservableProperty]
-    private string _modIconPath;
-
-    [ObservableProperty]
-    [NotifyCanExecuteChangedFor(nameof(CreateProjectCommand))]
-    private ProjectTemplate? _selectedTemplate;
-
     public ObservableCollection<GameVersionCheckItem> GameVersions { get; } = new();
 
     public ObservableCollection<ModDependency> ModDependencies { get; } = new();
@@ -67,30 +82,9 @@ public partial class CreateNewProjectViewModel : ViewModelBase
     public ObservableCollection<EditableString> LoadBeforeList { get; } = new();
 
     /// <summary>
-    /// Gets the collection of available project templates.
+    ///     Gets the collection of available project templates.
     /// </summary>
     public ObservableCollection<ProjectTemplate> Templates { get; }
-
-    private AppSettings _settings;
-
-    public CreateNewProjectViewModel(IOptions<AppSettings> options)
-    {
-        _logger = this.Log();
-        _settings = options.Value;
-        string author = _settings.Author;
-        if (!string.IsNullOrEmpty(author))
-            Author = author;
-        Templates = new ObservableCollection<ProjectTemplate>
-            {
-                new("普通 (Normal)")
-            };
-        InitializeData();
-        SelectedTemplate = Templates.FirstOrDefault();
-        this.PropertyChanged += OnAuthorOrProjectNameChanged;
-        GameVersions.Add(new GameVersionCheckItem { DisplayName = "1.6", IsSelected = true });
-        GameVersions.Add(new GameVersionCheckItem { DisplayName = "1.5" });
-        GameVersions.Add(new GameVersionCheckItem { DisplayName = "1.4" });
-    }
 
     private void InitializeData()
     {
@@ -98,19 +92,17 @@ public partial class CreateNewProjectViewModel : ViewModelBase
         ModDependencies.Add(new ModDependency
         {
             PackageId = "ludeon.rimworld",
-            DisplayName = "Core",
+            DisplayName = "Core"
         });
 
         // 添加一个示例加载顺序
-        LoadAfterList.Add(new("brrainz.harmony"));
+        LoadAfterList.Add(new EditableString("brrainz.harmony"));
     }
 
     private void OnAuthorOrProjectNameChanged(object? sender, PropertyChangedEventArgs e)
     {
         if (e.PropertyName == nameof(Author) || e.PropertyName == nameof(ProjectName))
-        {
             OnPropertyChanged(nameof(PackageId));
-        }
     }
 
     [RelayCommand]
@@ -122,44 +114,35 @@ public partial class CreateNewProjectViewModel : ViewModelBase
     [RelayCommand]
     private void RemoveDependency(ModDependency dependency)
     {
-        if (dependency != null)
-        {
-            ModDependencies.Remove(dependency);
-        }
+        if (dependency != null) ModDependencies.Remove(dependency);
     }
 
     [RelayCommand]
     private void AddLoadAfter()
     {
-        LoadAfterList.Add(new(""));
+        LoadAfterList.Add(new EditableString(""));
     }
 
     [RelayCommand]
     private void RemoveLoadAfter(EditableString packageId)
     {
-        if (packageId != null)
-        {
-            LoadAfterList.Remove(packageId);
-        }
+        if (packageId != null) LoadAfterList.Remove(packageId);
     }
 
     [RelayCommand]
     private void AddLoadBefore()
     {
-        LoadBeforeList.Add(new(""));
+        LoadBeforeList.Add(new EditableString(""));
     }
 
     [RelayCommand]
     private void RemoveLoadBefore(EditableString packageId)
     {
-        if (packageId != null)
-        {
-            LoadBeforeList.Remove(packageId);
-        }
+        if (packageId != null) LoadBeforeList.Remove(packageId);
     }
 
     /// <summary>
-    /// Determines if the project can be created based on the current form state.
+    ///     Determines if the project can be created based on the current form state.
     /// </summary>
     private bool CanCreateProject()
     {
@@ -169,7 +152,7 @@ public partial class CreateNewProjectViewModel : ViewModelBase
     }
 
     /// <summary>
-    /// Command to create a new project.
+    ///     Command to create a new project.
     /// </summary>
     [RelayCommand(CanExecute = nameof(CanCreateProject))]
     private void CreateProject()
@@ -177,29 +160,31 @@ public partial class CreateNewProjectViewModel : ViewModelBase
         if (ProjectName == null) return;
         var displayName = ProjectName;
         ProjectName = ProjectName.Replace(' ', '_');
-        var targetPath = Path.Combine(ProjectLocation, ProjectName);
-        _logger.LogInformation("Attempting to create project '{}' at '{}'.", ProjectName, ProjectLocation);
+        if (!ProjectLocation.TrimEnd(Path.DirectorySeparatorChar).EndsWith(ProjectName, StringComparison.OrdinalIgnoreCase))
+            ProjectLocation = Path.Combine(ProjectLocation, ProjectName);
+
+        _logger.LogInformation("Attempting to create project '{name}' at '{location}'.", ProjectName, ProjectLocation);
         _settings.Author = Author.Split(',')[0].Replace(" ", "");
+        
         var newItem = new RecentPorjectsItem
         {
             ProjectName = displayName,
-            ProjectPath = targetPath
+            ProjectPath = ProjectLocation
         };
         _settings.RecentProjects.Add(newItem);
         _settings.CurrentProject = newItem;
         _settings.SaveAppSettings();
         var userData = new Dictionary<string, object>
-            {
-                { "modName", ProjectName },
-                { "gameVersion", GameVersions.Where(e => e.IsSelected).Select(t => t.DisplayName) },
-            };
+        {
+            { "modName", ProjectName },
+            { "gameVersion", GameVersions.Where(e => e.IsSelected).Select(t => t.DisplayName) }
+        };
         Task.Run(() =>
         {
-            InitProject.Init(userData, ProjectLocation);
-            CreateAboutXml(Path.Combine(targetPath, "About", "About.xml"));
+            var projectPath = InitProject.Init(userData, ProjectLocation);
+            CreateAboutXml(Path.Combine(projectPath, "About", "About.xml"));
         });
-        TempConfig.ProjectPath = Path.Combine(ProjectLocation, ProjectName);
-
+        TempConfig.ProjectPath = ProjectLocation;
         WeakReferenceMessenger.Default.Send(new CloseWindowMessage { Sender = new WeakReference(this) });
     }
 
@@ -207,12 +192,9 @@ public partial class CreateNewProjectViewModel : ViewModelBase
     private async Task BrowseIcon()
     {
         var storageService = GlobalSingletonHelper.StorageProvider;
-        if (!storageService.CanOpen)
-        {
-            _logger.LogWarning("Cannot open folder picker.");
-        }
+        if (!storageService.CanOpen) _logger.LogWarning("Cannot open folder picker.");
 
-        var files = await storageService.OpenFilePickerAsync(new FilePickerOpenOptions()
+        var files = await storageService.OpenFilePickerAsync(new FilePickerOpenOptions
         {
             AllowMultiple = false,
             FileTypeFilter = new[] { FilePickerFileTypes.ImageAll }
@@ -221,28 +203,22 @@ public partial class CreateNewProjectViewModel : ViewModelBase
         {
             ModIconPath = files.First().Path.LocalPath;
 
-            if (!ModIconPath.EndsWith(".png"))
-            {
-                File.Move(ModIconPath, ModIconPath.Split('.').Last() + ".png");
-            }
+            if (!ModIconPath.EndsWith(".png")) File.Move(ModIconPath, ModIconPath.Split('.').Last() + ".png");
         }
     }
 
     /// <summary>
-    /// Command to open a folder browser to select the project location.
+    ///     Command to open a folder browser to select the project location.
     /// </summary>
     [RelayCommand]
     private async Task BrowseLocationAsync()
     {
         var storageService = GlobalSingletonHelper.StorageProvider;
-        if (!storageService.CanOpen)
-        {
-            _logger.LogWarning("Cannot open folder picker.");
-        }
+        if (!storageService.CanOpen) _logger.LogWarning("Cannot open folder picker.");
 
         var uri = await storageService.TryGetFolderFromPathAsync(Path.Combine(TempConfig.AppPath, "Projects"));
 
-        FolderPickerOpenOptions options = new FolderPickerOpenOptions()
+        var options = new FolderPickerOpenOptions
         {
             AllowMultiple = false,
             Title = "选择项目位置",
@@ -250,10 +226,7 @@ public partial class CreateNewProjectViewModel : ViewModelBase
         };
 
         var folders = await storageService.OpenFolderPickerAsync(options);
-        if (folders is not null && folders.Any())
-        {
-            ProjectLocation = folders.First().Path.LocalPath;
-        }
+        if (folders is not null && folders.Any()) ProjectLocation = folders.First().Path.LocalPath;
     }
 
     private void CreateAboutXml(string filePath)
@@ -262,17 +235,17 @@ public partial class CreateNewProjectViewModel : ViewModelBase
         rXStruct.Defs.Add(new DefInfo { TagName = "name", Value = ProjectName });
         rXStruct.Defs.Add(new DefInfo { TagName = "author", Value = Author });
         rXStruct.Defs.Add(new DefInfo { TagName = "packageId", Value = PackageId });
-        rXStruct.Defs.Add(new DefInfo { TagName = "description", Value = ProjectDescription ?? "No description provided." });
+        rXStruct.Defs.Add(new DefInfo
+            { TagName = "description", Value = ProjectDescription ?? "No description provided." });
         if (!string.IsNullOrEmpty(ModIconPath))
-        {
             rXStruct.Defs.Add(new DefInfo { TagName = "iconPath", Value = "ModIcon.png" });
-        }
         var versions = GameVersions.Where(x => x.IsSelected).Select(x => x.DisplayName).ToList();
         if (versions.Count != 0)
         {
             var versionFields = versions.Select(v => new XmlFieldInfo { Name = "li", Value = v }).ToList();
             rXStruct.Defs.Add(new DefInfo { TagName = "supportedVersions", Fields = versionFields });
         }
+
         if (ModDependencies.Any())
         {
             var modFields = new List<XmlFieldInfo>();
@@ -287,9 +260,11 @@ public partial class CreateNewProjectViewModel : ViewModelBase
                 if (props.Count > 0)
                     modFields.Add(new XmlFieldInfo { Name = "li", Value = props });
             }
+
             if (modFields.Count > 0)
                 rXStruct.Defs.Add(new DefInfo { TagName = "modDependencies", Fields = modFields });
         }
+
         AddListToDefs(rXStruct, "loadAfter", LoadAfterList);
         AddListToDefs(rXStruct, "loadBefore", LoadBeforeList);
         var content = XmlConverter.SerializeAbout(rXStruct);

@@ -48,5 +48,7 @@ public static class ServiceCollectionExtensions
         collection.AddSingleton<ModParser>();
         collection.AddSingleton<NodeInfoManager>();
         collection.AddSingleton<NodeGenerationService>();
+        collection.AddTransient<FileFromRule>();
+        collection.AddSingleton<ExampleXmlManager>();
     }
 }

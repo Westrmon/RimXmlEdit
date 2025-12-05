@@ -1,3 +1,6 @@
+using System;
+using System.Globalization;
+using System.Threading.Tasks;
 using Avalonia;
 using Avalonia.Controls;
 using Avalonia.Controls.ApplicationLifetimes;
@@ -8,19 +11,17 @@ using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
 using RimXmlEdit.Core.Extensions;
-using RimXmlEdit.Core.Utils;
 using RimXmlEdit.Service;
 using RimXmlEdit.Utils;
 using RimXmlEdit.ViewModels;
-using System;
-using System.Globalization;
-using System.Threading.Tasks;
 
 namespace RimXmlEdit;
 
-public partial class App : Application
+public class App : Application
 {
     private ILogger _log;
+
+    // public static event Action? OnApplicationExiting;
 
     public override void Initialize()
     {
@@ -43,7 +44,7 @@ public partial class App : Application
         var configuration = new ConfigurationBuilder()
             .AddInMemoryCollection()
             .SetBasePath(AppDomain.CurrentDomain.BaseDirectory)
-            .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+            .AddJsonFile("appsettings.json", true, true)
             .Build();
 
         collection.AddCommonServices(configuration);
@@ -61,9 +62,7 @@ public partial class App : Application
                 {
                     DataContext = vm
                 };
-                desktop.Exit += (_, _) =>
-                {
-                };
+                desktop.Exit += (_, _) => { };
 
                 localizationService.SwitchLanguage(new CultureInfo("zh-CN"));
                 var topLevel = TopLevel.GetTopLevel(desktop.MainWindow);
@@ -93,39 +92,29 @@ public partial class App : Application
 
     private void CurrentDomain_ProcessExit(object? sender, EventArgs e)
     {
+        GlobalSingletonHelper.Exit(this, e);
         _log.LogInformation("Application is exiting");
     }
 
     private void HandleGlobalException(object sender, UnhandledExceptionEventArgs e)
     {
-        if (e.ExceptionObject is Exception ex)
-        {
-            Dispatcher.UIThread.InvokeAsync(() => ShowCrashWindow(ex));
-        }
+        if (e.ExceptionObject is Exception ex) Dispatcher.UIThread.InvokeAsync(() => ShowCrashWindow(ex));
     }
 
     private void ShowCrashWindow(Exception exception)
     {
         _log.LogError(exception, "Error");
-        if (Application.Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
-        {
+        if (Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop)
             foreach (var win in desktop.Windows)
-            {
                 if (win is CrashReportWindow)
                     return;
-            }
-        }
 
         var crashWindow = new CrashReportWindow();
         crashWindow.ErrorMessageBox.Text = exception.ToString();
         if (Current?.ApplicationLifetime is IClassicDesktopStyleApplicationLifetime desktop2
             && desktop2.MainWindow != null)
-        {
             crashWindow.ShowDialog(desktop2.MainWindow);
-        }
         else
-        {
             crashWindow.Show();
-        }
     }
 }

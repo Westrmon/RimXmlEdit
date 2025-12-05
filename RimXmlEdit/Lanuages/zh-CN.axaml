@@ -12,13 +12,14 @@
     <system:String x:Key="MainView_TexturePreviewLabel">贴图预览</system:String>
     <system:String x:Key="MainView_EditNodeTab">节点编辑</system:String>
     <system:String x:Key="MainView_XMLSourceFileTab">XML源文件</system:String>
-	<system:String x:Key="MainView_Menu_File">文件</system:String>
-	<system:String x:Key="MainView_Menu_ImportXML">导入XML...</system:String>
-	<system:String x:Key="MainView_Menu_ImportDLL">导入DLL...</system:String>
-	<system:String x:Key="MainView_Menu_Exit">退出</system:String>
-	<system:String x:Key="MainView_Menu_Setting">设置</system:String>
-	<system:String x:Key="MainView_Menu_About">关于</system:String>
-	<system:String x:Key="MainView_FileExplorerTitle">文件资源管理器</system:String>
+    <system:String x:Key="MainView_Menu_File">文件</system:String>
+    <system:String x:Key="MainView_Menu_Save">保存</system:String>
+    <system:String x:Key="MainView_Menu_ImportXML">导入XML...</system:String>
+    <system:String x:Key="MainView_Menu_ImportDLL">导入DLL...</system:String>
+    <system:String x:Key="MainView_Menu_Exit">退出</system:String>
+    <system:String x:Key="MainView_Menu_Setting">设置</system:String>
+    <system:String x:Key="MainView_Menu_About">关于</system:String>
+    <system:String x:Key="MainView_FileExplorerTitle">文件资源管理器</system:String>
 
     <system:String x:Key="TexturePreviewView_DragDropHint">拖入图片 / 暂无图层</system:String>
 
@@ -54,10 +55,10 @@
     <system:String x:Key="CreateNewProject_LoadLabel">加载顺序 (可选)</system:String>
     <system:String x:Key="CreateNewProject_CreateButton">创建</system:String>
     <system:String x:Key="SettingsView_GeneralSettings">通用设置</system:String>
-	<system:String x:Key="SettingsView_CancelButton">取消</system:String>
-	<system:String x:Key="SettingsView_Save">保存设置</system:String>
-	
+    <system:String x:Key="SettingsView_CancelButton">取消</system:String>
+    <system:String x:Key="SettingsView_Save">保存设置</system:String>
+
     <system:String x:Key="MsEmbeddedView_SetFileName">设置文件名</system:String>
     <system:String x:Key="MsEmbeddedView_IsFolder">是否为文件夹</system:String>
-    
+
 </ResourceDictionary>

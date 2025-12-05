@@ -1,0 +1,103 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Defs xmlns:meta="RimXmlEdit.Template"
+      meta:defType="Weapon">
+
+    <meta:FilterDefs>
+        <meta:Filter Name="IsGun" Desc="[类型] 是一把枪械 (否则为近战武器)"/>
+        <meta:Filter Name="IsAdvanced" Desc="[科技] 太空时代科技 (增加造价与属性)"/>
+        <meta:Filter Name="HasArt" Desc="[资源] 使用自定义美术贴图"/>
+    </meta:FilterDefs>
+
+    <ThingDef meta:Name="UniversalWeapon"
+              meta:Desc="通用武器生成器(支持枪械/近战/高科技切换)"
+              ParentName="BaseHumanMakeableGun">
+        <defName>MyNewWeapon</defName>
+        <label meta:If="IsGun">New Gun</label>
+        <label meta:Unless="IsGun">New Sword</label>
+        <description>A weapon created by RimXmlEdit.</description>
+        <graphicData>
+            <texPath meta:If="HasArt">Things/Item/Equipment/Weapon/MyCustomTexture</texPath>
+            <texPath meta:Unless="HasArt">Things/Item/Equipment/Weapon/Placeholder</texPath>
+            <graphicClass>Graphic_Single</graphicClass>
+        </graphicData>
+        <statBases>
+            <WorkToMake>10000</WorkToMake>
+            <Mass>2.5</Mass>
+            <MarketValue meta:If="IsAdvanced">2500</MarketValue>
+            <MarketValue meta:Unless="IsAdvanced">500</MarketValue>
+            <AccuracyTouch meta:If="IsGun">0.80</AccuracyTouch>
+            <AccuracyShort meta:If="IsGun">0.85</AccuracyShort>
+            <AccuracyMedium meta:If="IsGun">0.75</AccuracyMedium>
+            <AccuracyLong meta:If="IsGun">0.60</AccuracyLong>
+            <RangedWeapon_Cooldown meta:If="IsGun">1.5</RangedWeapon_Cooldown>
+        </statBases>
+        <costList>
+            <Steel>60</Steel>
+            <ComponentSpacer meta:If="IsAdvanced">2</ComponentSpacer>
+            <ComponentIndustrial meta:Unless="IsAdvanced">5</ComponentIndustrial>
+            <WoodLog meta:Unless="IsGun">20</WoodLog>
+        </costList>
+        <verbs meta:If="IsGun">
+            <li>
+                <verbClass>Verb_Shoot</verbClass>
+                <hasStandardCommand>true</hasStandardCommand>
+                <defaultProjectile meta:If="IsAdvanced">Bullet_ChargeRifle</defaultProjectile>
+                <defaultProjectile meta:Unless="IsAdvanced">Bullet_AssaultRifle</defaultProjectile>
+
+                <warmupTime>1.0</warmupTime>
+                <range>30.9</range>
+                <burstShotCount meta:If="IsAdvanced">3</burstShotCount>
+                <ticksBetweenBurstShots meta:If="IsAdvanced">12</ticksBetweenBurstShots>
+
+                <soundCast>Shot_ChargeRifle</soundCast>
+                <soundCastTail>GunTail_Medium</soundCastTail>
+                <muzzleFlashScale>9</muzzleFlashScale>
+            </li>
+        </verbs>
+        <tools>
+            <li meta:If="IsGun">
+                <label>stock</label>
+                <capacities>
+                    <li>Blunt</li>
+                </capacities>
+                <power>9</power>
+                <cooldownTime>2</cooldownTime>
+            </li>
+            <li meta:If="IsGun">
+                <label>barrel</label>
+                <capacities>
+                    <li>Blunt</li>
+                    <li>Poke</li>
+                </capacities>
+                <power>9</power>
+                <cooldownTime>2</cooldownTime>
+            </li>
+            <li meta:Unless="IsGun">
+                <label>handle</label>
+                <capacities>
+                    <li>Blunt</li>
+                </capacities>
+                <power>8</power>
+                <cooldownTime>1.6</cooldownTime>
+            </li>
+            <li meta:Unless="IsGun">
+                <label>point</label>
+                <capacities>
+                    <li>Stab</li>
+                </capacities>
+                <power meta:If="IsAdvanced">30</power>
+                <power meta:Unless="IsAdvanced">18</power>
+                <cooldownTime>2</cooldownTime>
+            </li>
+            <li meta:Unless="IsGun">
+                <label>edge</label>
+                <capacities>
+                    <li>Cut</li>
+                </capacities>
+                <power meta:If="IsAdvanced">30</power>
+                <power meta:Unless="IsAdvanced">20</power>
+                <cooldownTime>1.8</cooldownTime>
+            </li>
+        </tools>
+    </ThingDef>
+</Defs>

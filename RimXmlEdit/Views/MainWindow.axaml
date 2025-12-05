@@ -1,347 +1,361 @@
 <Window xmlns="https://github.com/avaloniaui"
-		xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-		xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-		xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-		xmlns:sys="using:System"
-		xmlns:i="using:Avalonia.Xaml.Interactivity"
-		xmlns:ia="using:Avalonia.Xaml.Interactions.Core"
-		xmlns:views="using:RimXmlEdit"
-		xmlns:ctrl="using:RimXmlEdit.Views"
-		xmlns:m="using:RimXmlEdit.Models"
-		xmlns:vm="using:RimXmlEdit.ViewModels"
-		xmlns:conv="using:RimXmlEdit.Converter"
-		xmlns:behaviors="using:RimXmlEdit.Utils"
-		xmlns:AvaloniaEdit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
-		xmlns:dialogHost="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
-		mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
-		x:Class="RimXmlEdit.Views.MainWindow"
-		x:DataType="vm:MainViewModel"
-		Icon="/Assets/rimxmledit_logo.ico"
-		Title="RimXmlEdit"
-		WindowStartupLocation="CenterScreen"
-		MinHeight="600" MinWidth="900"
-		Height="670" Width="1170">
-	<dialogHost:DialogHost Identifier="RootDialogHost"
-						   DialogClosing="DialogHost_DialogClosing">
-		<Grid RowDefinitions="Auto, *, 30">
-			<!-- Row 0: Menu Bar -->
-			<Menu Grid.Row="0" Background="{DynamicResource Layer1BackgroundColor}">
-				<MenuItem Header="{DynamicResource MainView_Menu_File}">
-					<MenuItem Header="{DynamicResource MainView_Menu_ImportXML}"
-							  Command="{Binding ImportXmlCommand}"/>
-					<MenuItem Header="{DynamicResource MainView_Menu_ImportDLL}"
-							  Command="{Binding ImportDllCommand}"/>
-					<MenuItem Header="{DynamicResource MainView_Menu_Exit}"
-							  Command="{Binding ExitCommand}"/>
-				</MenuItem>
-				<MenuItem Header="{DynamicResource MainView_Menu_Setting}"
-						  Command="{Binding SettingCommand}"/>
-				<MenuItem Header="{DynamicResource MainView_Menu_About}"
-						  Command="{Binding AboutCommand}"/>
-			</Menu>
+        xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+        xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+        xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+        xmlns:i="using:Avalonia.Xaml.Interactivity"
+        xmlns:ia="using:Avalonia.Xaml.Interactions.Core"
+        xmlns:views="using:RimXmlEdit"
+        xmlns:ctrl="using:RimXmlEdit.Views"
+        xmlns:m="using:RimXmlEdit.Models"
+        xmlns:vm="using:RimXmlEdit.ViewModels"
+        xmlns:conv="using:RimXmlEdit.Converter"
+        xmlns:behaviors="using:RimXmlEdit.Utils"
+        xmlns:AvaloniaEdit="clr-namespace:AvaloniaEdit;assembly=AvaloniaEdit"
+        xmlns:dialogHost="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
+        mc:Ignorable="d" d:DesignWidth="900" d:DesignHeight="600"
+        x:Class="RimXmlEdit.Views.MainWindow"
+        x:DataType="vm:MainViewModel"
+        Icon="/Assets/rimxmledit_logo.ico"
+        Title="RimXmlEdit"
+        WindowStartupLocation="CenterScreen"
+        MinHeight="600" MinWidth="900"
+        Height="670" Width="1170">
+    <dialogHost:DialogHost Identifier="RootDialogHost"
+                           DialogClosing="DialogHost_DialogClosing">
+        <Grid RowDefinitions="Auto, *, 30">
+            <!-- Row 0: Menu Bar -->
+            <Menu Grid.Row="0" Background="{DynamicResource Layer1BackgroundColor}">
+                <MenuItem Header="{DynamicResource MainView_Menu_File}">
+                    <MenuItem Header="{DynamicResource MainView_Menu_Save}"
+                              Command="{Binding SaveCommand}" />
+                    <MenuItem Header="{DynamicResource MainView_Menu_ImportXML}"
+                              Command="{Binding ImportXmlCommand}" />
+                    <MenuItem Header="{DynamicResource MainView_Menu_ImportDLL}"
+                              Command="{Binding ImportDllCommand}" />
+                    <MenuItem Header="{DynamicResource MainView_Menu_Exit}"
+                              Command="{Binding ExitCommand}" />
+                </MenuItem>
+                <MenuItem Header="{DynamicResource MainView_Menu_Setting}"
+                          Command="{Binding SettingCommand}" />
+                <MenuItem Header="{DynamicResource MainView_Menu_About}"
+                          Command="{Binding AboutCommand}" />
+            </Menu>
 
-			<!-- Row 1: Main Content Area (3 Columns + Splitters) -->
-			<Grid Grid.Row="1"
-				  Background="{DynamicResource Layer1BackgroundColor}">
-				<Grid.ColumnDefinitions>
-					<ColumnDefinition MinWidth="180" Width="180" />
-					<ColumnDefinition Width="3" />
-					<ColumnDefinition Width="*" MinWidth="250" />
-					<ColumnDefinition Width="3" />
-					<ColumnDefinition MinWidth="250" Width="250" />
-				</Grid.ColumnDefinitions>
-				<Border BorderThickness="1"
-						MinWidth="180"
-						BorderBrush="{DynamicResource BorderBrush}">
-					<Grid Grid.Column="0"
-						  RowDefinitions="3*, 5, 2*"
-						  Background="{DynamicResource Layer1BackgroundColor}">
+            <!-- Row 1: Main Content Area (3 Columns + Splitters) -->
+            <Grid Grid.Row="1"
+                  Background="{DynamicResource Layer1BackgroundColor}">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition MinWidth="180" Width="180" />
+                    <ColumnDefinition Width="3" />
+                    <ColumnDefinition Width="*" MinWidth="250" />
+                    <ColumnDefinition Width="3" />
+                    <ColumnDefinition MinWidth="250" Width="250" />
+                </Grid.ColumnDefinitions>
+                <Border BorderThickness="1"
+                        MinWidth="180"
+                        BorderBrush="{DynamicResource BorderBrush}">
+                    <Grid
+                        RowDefinitions="3*, 5, 2*"
+                        Background="{DynamicResource Layer1BackgroundColor}">
 
-						<Grid Grid.Row="0" RowDefinitions="Auto *">
-							<TextBlock Text="{DynamicResource MainView_FileExplorerTitle}" Grid.Row="0"
-									   FontWeight="Bold"
-									   DockPanel.Dock="Top"
-									   Margin="10,10,0,5"
-									   Foreground="{DynamicResource TextPrimaryBrush}"/>
-							<views:SimpleFileExplorer Grid.Row="1" />
-						</Grid>
+                        <Grid Grid.Row="0" RowDefinitions="Auto *">
+                            <TextBlock Text="{DynamicResource MainView_FileExplorerTitle}" Grid.Row="0"
+                                       FontWeight="Bold"
+                                       DockPanel.Dock="Top"
+                                       Margin="10,10,0,5"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
+                            <views:SimpleFileExplorer Grid.Row="1" />
+                        </Grid>
 
-						<!-- Middle Section: Vertical Splitter -->
-						<GridSplitter Grid.Row="1"
-									  HorizontalAlignment="Stretch"
-									  VerticalAlignment="Center"
-									  Height="5"
-									  Background="{DynamicResource BorderBrush}"/>
+                        <!-- Middle Section: Vertical Splitter -->
+                        <GridSplitter Grid.Row="1"
+                                      HorizontalAlignment="Stretch"
+                                      VerticalAlignment="Center"
+                                      Height="5"
+                                      Background="{DynamicResource BorderBrush}" />
 
-						<!-- Bottom Section: Node Search -->
-						<StackPanel Grid.Row="2" Margin="10">
-							<TextBlock Text="节点搜索" IsEnabled="False"
-									   FontWeight="Bold"
-									   Margin="0,0,0,5"
-									   Foreground="{DynamicResource TextPrimaryBrush}"/>
+                        <!-- Bottom Section: Node Search -->
+                        <StackPanel Grid.Row="2" Margin="10">
+                            <TextBlock Text="节点搜索" IsEnabled="False"
+                                       FontWeight="Bold"
+                                       Margin="0,0,0,5"
+                                       Foreground="{DynamicResource TextPrimaryBrush}" />
 
-							<ctrl:QuickSearchBox x:Name="SearchBox" />
-						</StackPanel>
-					</Grid>
-				</Border>
-				<!-- Column 1: Left Splitter -->
-				<GridSplitter Grid.Column="1"
-							  Background="{DynamicResource BorderBrush}"/>
-				<Button Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Top"
-						Margin="0,10,13,5" Width="20" Height="20" Content="+" Padding="0"
-						Command="{Binding AddNodeToRootCommand}" ZIndex="1"/>
-				<!-- Column 2: Center Content (Node Editing / XML Source) -->
-				<TabControl Grid.Column="2"
-							SelectedIndex="{Binding IsNodeEditingTabSelected, Converter={x:Static conv:BoolToIntegerConverter.Instance}}">
+                            <ctrl:QuickSearchBox x:Name="SearchBox" />
+                        </StackPanel>
+                    </Grid>
+                </Border>
+                <!-- Column 1: Left Splitter -->
+                <GridSplitter Grid.Column="1"
+                              Background="{DynamicResource BorderBrush}" />
+                <Button Grid.Column="2" HorizontalAlignment="Right" VerticalAlignment="Top"
+                        Margin="0,10,13,5" Width="20" Height="20" Content="+" Padding="0"
+                        Command="{Binding AddNodeToRootCommand}" ZIndex="1" />
+                <!-- Column 2: Center Content (Node Editing / XML Source) -->
+                <TabControl Grid.Column="2"
+                            SelectedIndex="{Binding IsNodeEditingTabSelected, Converter={x:Static conv:BoolToIntegerConverter.Instance}}">
 
-					<!-- 节点编辑部分  -->
-					<TabItem Header="{DynamicResource MainView_EditNodeTab}" AutomationProperties.Name="Node Editing Tab">
-						<TreeView ItemsSource="{Binding DefTreeNodes}"
-								  SelectedItem="{Binding DefNode, Mode=TwoWay}"
-								  AutoScrollToSelectedItem="True"
-								  ScrollViewer.AllowAutoHide="False"
-								  Background="{DynamicResource AppBackgroundColor}">
-							<TreeView.Resources>
-								<SolidColorBrush x:Key="TreeViewItemBackgroundPointerOver" Color="{DynamicResource TreeViewItemHoverColor}" />
-								<SolidColorBrush x:Key="TreeViewItemBackgroundSelected" Color="{DynamicResource TreeViewItemHighlightColor}" />
-								<SolidColorBrush x:Key="TreeViewItemBackgroundSelectedPointerOver" Color="{DynamicResource TreeViewItemSelectedHoverColor}" />
-								<SolidColorBrush x:Key="TreeViewItemBackgroundSelectedPressed" Color="{DynamicResource TreeViewItemHighlightColor}" />
-							</TreeView.Resources>
+                    <!-- 节点编辑部分  -->
+                    <TabItem Header="{DynamicResource MainView_EditNodeTab}"
+                             AutomationProperties.Name="Node Editing Tab">
+                        <TreeView ItemsSource="{Binding DefTreeNodes}"
+                                  SelectedItem="{Binding DefNode, Mode=TwoWay}"
+                                  AutoScrollToSelectedItem="True"
+                                  ScrollViewer.AllowAutoHide="False"
+                                  Background="{DynamicResource AppBackgroundColor}">
+                            <TreeView.Resources>
+                            </TreeView.Resources>
 
-							<TreeView.Styles>
-								<Style Selector="StackPanel.error">
-									<Setter Property="Background" Value="{DynamicResource ErrorBackgroundBrush}" />
-								</Style>
-								<Style Selector="TreeViewItem" x:DataType="m:DefNode">
-									<Setter Property="MinHeight" Value="30" />
-									<Setter Property="IsExpanded" Value="{Binding IsNodeExpanded, Mode=TwoWay}" />
-								</Style>
-								<Style Selector="TreeViewItem:selected">
-									<Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}" />
-								</Style>
+                            <TreeView.Styles>
+                                <Style Selector="StackPanel.error">
+                                    <Setter Property="Background" Value="{DynamicResource ErrorBackgroundBrush}" />
+                                </Style>
+                                <Style Selector="TreeViewItem" x:DataType="m:DefNode">
+                                    <Setter Property="MinHeight" Value="30" />
+                                    <Setter Property="IsExpanded" Value="{Binding IsNodeExpanded, Mode=TwoWay}" />
+                                </Style>
+                                <Style Selector="TreeViewItem:selected">
+                                    <Setter Property="Background" Value="{DynamicResource AppBackgroundBrush}" />
+                                </Style>
 
-								<Style Selector="TextBox.attrBox">
-									<Setter Property="Padding" Value="2,0"/>
-									<Setter Property="MinHeight" Value="20"/>
-									<Setter Property="VerticalAlignment" Value="Center"/>
-									<Setter Property="Background" Value="Transparent"/>
-									<Setter Property="BorderThickness" Value="0,0,0,1"/>
-									<Setter Property="BorderBrush" Value="{DynamicResource XmlAttributeBrush}"/>
-								</Style>
-							</TreeView.Styles>
+                                <Style Selector="TextBox.attrBox">
+                                    <Setter Property="Padding" Value="2,0" />
+                                    <Setter Property="MinHeight" Value="20" />
+                                    <Setter Property="VerticalAlignment" Value="Center" />
+                                    <Setter Property="Background" Value="Transparent" />
+                                    <Setter Property="BorderThickness" Value="0,0,0,1" />
+                                    <Setter Property="BorderBrush" Value="{DynamicResource XmlAttributeBrush}" />
+                                </Style>
+                            </TreeView.Styles>
 
-							<TreeView.KeyBindings>
-								<KeyBinding Gesture="q" Command="{Binding UpdataChildListCommand}" />
-							</TreeView.KeyBindings>
+                            <TreeView.KeyBindings>
+                                <KeyBinding Gesture="q" Command="{Binding UpdateChildListCommand}" />
+                                <KeyBinding Gesture="ctrl+s" Command="{Binding SaveCommand}"/>
+                            </TreeView.KeyBindings>
 
-							<TreeView.DataTemplates>
-								<TreeDataTemplate x:DataType="m:DefNode" ItemsSource="{Binding Children}">
-									<StackPanel Orientation="Horizontal"
-												HorizontalAlignment="Stretch"
-												Classes.error="{Binding IsError}"
-												DragDrop.AllowDrop="True"
-												Background="Transparent">
-										<Interaction.Behaviors>
-											<ia:EventTriggerBehavior EventName="Drop">
-												<InvokeCommandAction Command="{Binding DropFileCommand}" PassEventArgsToCommand="True"/>
-											</ia:EventTriggerBehavior>
-										</Interaction.Behaviors>
+                            <TreeView.DataTemplates>
+                                <TreeDataTemplate x:DataType="m:DefNode" ItemsSource="{Binding Children}">
+                                    <StackPanel Orientation="Horizontal"
+                                                HorizontalAlignment="Stretch"
+                                                Classes.error="{Binding IsError}"
+                                                DragDrop.AllowDrop="True"
+                                                Background="Transparent">
+                                        <Interaction.Behaviors>
+                                            <ia:EventTriggerBehavior EventName="Drop">
+                                                <InvokeCommandAction Command="{Binding DropFileCommand}"
+                                                                     PassEventArgsToCommand="True" />
+                                            </ia:EventTriggerBehavior>
+                                        </Interaction.Behaviors>
 
-										<StackPanel.ContextMenu>
-											<ContextMenu>
-												<MenuItem Header="Add Attribute">
-													<MenuItem Header="ParentName"
-															  Command="{Binding AddAttributeCommand}"
-															  CommandParameter="ParentName"/>
-													<MenuItem Header="Abstract (bool)"
-															  Command="{Binding AddAttributeCommand}"
-															  CommandParameter="Abstract"/>
-													<MenuItem Header="Class"
-															  IsVisible="{Binding IsCanRefTag}"
-															  Command="{Binding AddAttributeCommand}"
-															  CommandParameter="Class"/>
-												</MenuItem>
-												<Separator/>
-												<MenuItem Header="Delete Node"
-														  Command="{Binding DeleteNodeCommand}"
-														  Foreground="Red"/>
-											</ContextMenu>
-										</StackPanel.ContextMenu>
+                                        <StackPanel.ContextMenu>
+                                            <ContextMenu>
+                                                <MenuItem Header="Add Attribute">
+                                                    <MenuItem Header="ParentName"
+                                                              Command="{Binding AddAttributeCommand}"
+                                                              CommandParameter="ParentName" />
+                                                    <MenuItem Header="Abstract (bool)"
+                                                              Command="{Binding AddAttributeCommand}"
+                                                              CommandParameter="Abstract" />
+                                                    <MenuItem Header="Class"
+                                                              IsVisible="{Binding IsCanRefTag}"
+                                                              Command="{Binding AddAttributeCommand}"
+                                                              CommandParameter="Class" />
+                                                </MenuItem>
+                                                <Separator />
+                                                <MenuItem Header="Delete Node"
+                                                          Command="{Binding DeleteNodeCommand}"
+                                                          Foreground="Red" />
+                                            </ContextMenu>
+                                        </StackPanel.ContextMenu>
 
-										<TextBlock Text="&lt;" Foreground="{DynamicResource XmlTagBrush}" VerticalAlignment="Center"/>
-										<TextBlock Text="{Binding TagName}" VerticalAlignment="Center" Foreground="{DynamicResource XmlTagBrush}" />
+                                        <TextBlock Text="&lt;" Foreground="{DynamicResource XmlTagBrush}"
+                                                   VerticalAlignment="Center" />
+                                        <TextBlock Text="{Binding TagName}" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource XmlTagBrush}" />
 
-										<ItemsControl ItemsSource="{Binding Attributes}">
-											<ItemsControl.ItemsPanel>
-												<ItemsPanelTemplate>
-													<StackPanel Orientation="Horizontal"/>
-												</ItemsPanelTemplate>
-											</ItemsControl.ItemsPanel>
-											<ItemsControl.ItemTemplate>
-												<DataTemplate>
-													<StackPanel Orientation="Horizontal" Margin="5,0,0,0">
-														<StackPanel.ContextMenu>
-															<ContextMenu>
-																<MenuItem Header="Delete Attribute"
-																		  Command="{Binding RemoveAttributeCommand}"/>
-															</ContextMenu>
-														</StackPanel.ContextMenu>
+                                        <ItemsControl ItemsSource="{Binding Attributes}">
+                                            <ItemsControl.ItemsPanel>
+                                                <ItemsPanelTemplate>
+                                                    <StackPanel Orientation="Horizontal" />
+                                                </ItemsPanelTemplate>
+                                            </ItemsControl.ItemsPanel>
+                                            <ItemsControl.ItemTemplate>
+                                                <DataTemplate>
+                                                    <StackPanel Orientation="Horizontal" Margin="5,0,0,0">
+                                                        <StackPanel.ContextMenu>
+                                                            <ContextMenu>
+                                                                <MenuItem Header="Delete Attribute"
+                                                                          Command="{Binding RemoveAttributeCommand}" />
+                                                            </ContextMenu>
+                                                        </StackPanel.ContextMenu>
 
-														<TextBlock Text="{Binding Name}" Foreground="{DynamicResource XmlAttributeBrush}" VerticalAlignment="Center"/>
-														<TextBlock Text="=&quot;" Foreground="{DynamicResource XmlTagBrush}" VerticalAlignment="Center"/>
+                                                        <TextBlock Text="{Binding Name}"
+                                                                   Foreground="{DynamicResource XmlAttributeBrush}"
+                                                                   VerticalAlignment="Center" />
+                                                        <TextBlock Text="=&quot;"
+                                                                   Foreground="{DynamicResource XmlTagBrush}"
+                                                                   VerticalAlignment="Center" />
 
-														<Panel VerticalAlignment="Center">
-															<TextBox Text="{Binding Value}"
-																	 Classes="attrBox"
-																	 Foreground="{DynamicResource XmlValueBrush}"
-																	 IsVisible="{Binding !IsEnum}"/>
-															<ComboBox ItemsSource="{Binding EnumList}"
-																	  SelectedItem="{Binding Value}"
-																	  IsVisible="{Binding IsEnum}"
-																	  MinHeight="20"
-																	  Padding="4,2"
-																	  BorderThickness="0"
-																	  Background="Transparent"/>
-														</Panel>
+                                                        <Panel VerticalAlignment="Center">
+                                                            <TextBox Text="{Binding Value}"
+                                                                     Classes="attrBox"
+                                                                     Foreground="{DynamicResource XmlValueBrush}"
+                                                                     IsVisible="{Binding !IsEnum}" />
+                                                            <ComboBox ItemsSource="{Binding EnumList}"
+                                                                      SelectedItem="{Binding Value}"
+                                                                      IsVisible="{Binding IsEnum}"
+                                                                      MinHeight="20"
+                                                                      Padding="4,2"
+                                                                      BorderThickness="0"
+                                                                      Background="Transparent" />
+                                                        </Panel>
 
-														<TextBlock Text="&quot;" Foreground="{DynamicResource XmlTagBrush}" VerticalAlignment="Center"/>
-													</StackPanel>
-												</DataTemplate>
-											</ItemsControl.ItemTemplate>
-										</ItemsControl>
+                                                        <TextBlock Text="&quot;"
+                                                                   Foreground="{DynamicResource XmlTagBrush}"
+                                                                   VerticalAlignment="Center" />
+                                                    </StackPanel>
+                                                </DataTemplate>
+                                            </ItemsControl.ItemTemplate>
+                                        </ItemsControl>
 
-										<TextBlock Text="&gt;" VerticalAlignment="Center" Foreground="{DynamicResource XmlTagBrush}" />
+                                        <TextBlock Text="&gt;" VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource XmlTagBrush}" />
 
-										<TextBox Text="{Binding Value}"
-												 IsVisible="{Binding IsEditable}"
-												 Background="Transparent"
-												 BorderThickness="0"
-												 Foreground="{DynamicResource XmlValueBrush}"
-												 Padding="5,7,5,0" Margin="0"
-												 MinHeight="29"
-												 TextChanged="TextBox_TextChanged"
-												 VerticalAlignment="Center" />
+                                        <TextBox Text="{Binding Value}"
+                                                 IsVisible="{Binding IsEditable}"
+                                                 Background="Transparent"
+                                                 BorderThickness="0"
+                                                 Foreground="{DynamicResource XmlValueBrush}"
+                                                 Padding="5,7,5,0" Margin="0"
+                                                 MinHeight="29"
+                                                 TextChanged="TextBox_TextChanged"
+                                                 VerticalAlignment="Center" />
 
-										<TextBlock Text="{Binding Value}"
-												   IsVisible="{Binding !IsEditable}"
-												   VerticalAlignment="Center"
-												   Foreground="{DynamicResource XmlValueBrush}" />
+                                        <TextBlock Text="{Binding Value}"
+                                                   IsVisible="{Binding !IsEditable}"
+                                                   VerticalAlignment="Center"
+                                                   Foreground="{DynamicResource XmlValueBrush}" />
 
-										<StackPanel Orientation="Horizontal" IsVisible="{Binding IsClosedTag}">
-											<TextBlock Text="&lt;/" Foreground="{DynamicResource XmlTagBrush}" VerticalAlignment="Center"/>
-											<TextBlock Text="{Binding TagName}" Foreground="{DynamicResource XmlTagBrush}" VerticalAlignment="Center"/>
-										</StackPanel>
-										<TextBlock Text="&gt;"
-												   VerticalAlignment="Center"
-												   IsVisible="{Binding !IsClosedTag, Converter={x:Static conv:BoolNotConverter.Instance}}"
-												   Foreground="{DynamicResource XmlTagBrush}" />
+                                        <StackPanel Orientation="Horizontal" IsVisible="{Binding IsClosedTag}">
+                                            <TextBlock Text="&lt;/" Foreground="{DynamicResource XmlTagBrush}"
+                                                       VerticalAlignment="Center" />
+                                            <TextBlock Text="{Binding TagName}"
+                                                       Foreground="{DynamicResource XmlTagBrush}"
+                                                       VerticalAlignment="Center" />
+                                        </StackPanel>
+                                        <TextBlock Text="&gt;"
+                                                   VerticalAlignment="Center"
+                                                   IsVisible="{Binding !IsClosedTag, Converter={x:Static conv:BoolNotConverter.Instance}}"
+                                                   Foreground="{DynamicResource XmlTagBrush}" />
 
-										<StackPanel Orientation="Horizontal"
-													VerticalAlignment="Center"
-													IsVisible="{Binding IsError}"
-													Margin="15,0,0,0">
-											<PathIcon Width="12" Height="12"
-													  Data="M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10-4.48 10-10S17.52,2 12,2z M13,17h-2v-2h2V17z M13,13h-2V7h2V13z"
-													  Foreground="{DynamicResource ErrorBrush}"/>
-											<TextBlock Text="{Binding ErrorMessage}"
-													   Foreground="{DynamicResource ErrorBrush}"
-													   FontSize="11"
-													   VerticalAlignment="Center"
-													   Margin="4,0,0,0"/>
-										</StackPanel>
-									</StackPanel>
-								</TreeDataTemplate>
-							</TreeView.DataTemplates>
-						</TreeView>
-					</TabItem>
+                                        <StackPanel Orientation="Horizontal"
+                                                    VerticalAlignment="Center"
+                                                    IsVisible="{Binding IsError}"
+                                                    Margin="15,0,0,0">
+                                            <PathIcon Width="12" Height="12"
+                                                      Data="M12,2C6.48,2 2,6.48 2,12s4.48,10 10,10 10-4.48 10-10S17.52,2 12,2z M13,17h-2v-2h2V17z M13,13h-2V7h2V13z"
+                                                      Foreground="{DynamicResource ErrorBrush}" />
+                                            <TextBlock Text="{Binding ErrorMessage}"
+                                                       Foreground="{DynamicResource ErrorBrush}"
+                                                       FontSize="11"
+                                                       VerticalAlignment="Center"
+                                                       Margin="4,0,0,0" />
+                                        </StackPanel>
+                                    </StackPanel>
+                                </TreeDataTemplate>
+                            </TreeView.DataTemplates>
+                        </TreeView>
+                    </TabItem>
 
-					<TabItem Header="{DynamicResource MainView_XMLSourceFileTab}" AutomationProperties.Name="XML Source File Tab">
-						<!--<TextBox Text="{Binding NodeXmlContent, Mode=TwoWay}" AcceptsReturn="True"
+                    <TabItem Header="{DynamicResource MainView_XMLSourceFileTab}"
+                             AutomationProperties.Name="XML Source File Tab">
+                        <!--<TextBox Text="{Binding NodeXmlContent, Mode=TwoWay}" AcceptsReturn="True"
 						IsReadOnly="False" Margin="0,0,0,20"
 						Background="{DynamicResource AppBackgroundBrush}" /> -->
-						<Border BorderThickness="0" Margin="0,0,0,20"
-								Background="{DynamicResource AppBackgroundBrush}"
-								VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
-							<AvaloniaEdit:TextEditor IsEnabled="True"
-													 MinHeight="10" MinWidth="50"
-													 x:Name="TextEdit" ShowLineNumbers="True"
-													 IsReadOnly="False" WordWrap="True"
-													 FontFamily="Cascadia Code,Consolas,Menlo,Monospace">
-								<i:Interaction.Behaviors>
-									<behaviors:TextBindingBehavior
-									BindableText="{Binding NodeXmlContent, Mode=TwoWay}" />
-								</i:Interaction.Behaviors>
-							</AvaloniaEdit:TextEditor>
-						</Border>
-					</TabItem>
-				</TabControl>
+                        <Border BorderThickness="0" Margin="0,0,0,20"
+                                Background="{DynamicResource AppBackgroundBrush}"
+                                VerticalAlignment="Stretch" HorizontalAlignment="Stretch">
+                            <AvaloniaEdit:TextEditor IsEnabled="True"
+                                                     MinHeight="10" MinWidth="50"
+                                                     x:Name="TextEdit" ShowLineNumbers="True"
+                                                     IsReadOnly="False" WordWrap="True"
+                                                     FontFamily="Cascadia Code,Consolas,Menlo,Monospace">
+                                <i:Interaction.Behaviors>
+                                    <behaviors:TextBindingBehavior
+                                        BindableText="{Binding NodeXmlContent, Mode=TwoWay}" />
+                                </i:Interaction.Behaviors>
+                            </AvaloniaEdit:TextEditor>
+                        </Border>
+                    </TabItem>
+                </TabControl>
 
-				<GridSplitter Grid.Column="3"
-							  HorizontalAlignment="Stretch"
-							  VerticalAlignment="Stretch"
-							  Background="{DynamicResource BorderBrush}"/>
+                <GridSplitter Grid.Column="3"
+                              HorizontalAlignment="Stretch"
+                              VerticalAlignment="Stretch"
+                              Background="{DynamicResource BorderBrush}" />
 
-				<Grid Grid.Column="4" Margin="14, 5" Grid.RowDefinitions="Auto, 20, *"
-					  Background="{DynamicResource Layer1BackgroundColor}">
-					<Grid.Styles>
-						<Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
-							<Setter Property="BorderThickness" Value="0,0,0,1" />
-						</Style>
-					</Grid.Styles>
-					
-					<TextBox Grid.Row="0" DockPanel.Dock="Right" MinHeight="0"
-							 Text="{Binding SearchChildText, Mode=TwoWay}"
-							 BorderThickness="0,0,0,2" Margin="0,0,0,5"
-							 Padding="5,0" FontSize="15" CornerRadius="0"
-							 BorderBrush="{DynamicResource SeparatorBrush}"
-							 Background="Transparent" Height="20"
-							 Watermark="{DynamicResource MainView_ChildListSearchWatermark}"/>
-					<StackPanel Grid.Row="1" Orientation="Horizontal">
-						<Border BorderThickness="0,0,0,0">
-							<TextBlock Text="{DynamicResource MainView_ParentLabel}" Margin="0,0,0,5" FontWeight="Bold"
-							   Foreground="{DynamicResource TextPrimaryBrush}"
-							   VerticalAlignment="Bottom"/>
-						</Border>
-						<Border BorderThickness="1,0,0,0">
-							<TextBlock Text="{DynamicResource MainView_ChildListInputLabel}" Margin="5,0,0,5" FontWeight="Bold"
-							   Foreground="{DynamicResource TextPrimaryBrush}"
-							   VerticalAlignment="Bottom"/>
-						</Border>
-					</StackPanel>
-					<ListBox ItemsSource="{Binding FilteredChildItems}" MinHeight="125" Margin="0,0,0,5"
-							 DoubleTapped="ListBox_DoubleTapped"  Grid.Row="2"
-							 ScrollViewer.HorizontalScrollBarVisibility="Auto"
-							 ScrollViewer.VerticalScrollBarVisibility="Auto"
-							 SelectedItem="{Binding ChildSiderBarSelectItem, Mode=TwoWay}">
-						<ListBox.ItemsPanel>
-							<ItemsPanelTemplate>
-								<VirtualizingStackPanel ScrollViewer.AllowAutoHide="False"/>
-							</ItemsPanelTemplate>
-						</ListBox.ItemsPanel>
-						<ListBox.Styles>
-							<Style Selector="ListBoxItem">
-								<Setter Property="MinHeight" Value="0"/>
-								<Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-								<Setter Property="Padding" Value="9,4,0,9"/>
-							</Style>
-						</ListBox.Styles>
-						<ListBox.ItemTemplate>
-							<DataTemplate>
-								<TextBlock Text="{Binding}" />
-							</DataTemplate>
-						</ListBox.ItemTemplate>
-					</ListBox>
-				</Grid>
-			</Grid>
-			<TextBox Grid.Row="2" Text="{Binding CurrentDescription}"
-					 TextWrapping="NoWrap" IsReadOnly="{Binding !CanEditNodeDefine}"
-					 Foreground="{DynamicResource TextPrimaryBrush}" MinHeight="0"
-					 Padding="5,5,0,0" CornerRadius="0" DoubleTapped="TextBox_DoubleTapped">
-				<TextBox.KeyBindings>
-					<KeyBinding Gesture="Enter"
-								Command="{Binding EditDescriptionCommand}"/>
-				</TextBox.KeyBindings>
-			</TextBox>
-		</Grid>
-	</dialogHost:DialogHost>
+                <Grid Grid.Column="4" Margin="14, 5" Grid.RowDefinitions="Auto, 20, *"
+                      Background="{DynamicResource Layer1BackgroundColor}">
+                    <Grid.Styles>
+                        <Style Selector="TextBox:focus /template/ Border#PART_BorderElement">
+                            <Setter Property="BorderThickness" Value="0,0,0,1" />
+                        </Style>
+                    </Grid.Styles>
+
+                    <TextBox Grid.Row="0" DockPanel.Dock="Right" MinHeight="0"
+                             Text="{Binding SearchChildText, Mode=TwoWay}"
+                             BorderThickness="0,0,0,2" Margin="0,0,0,5"
+                             Padding="5,0" FontSize="15" CornerRadius="0"
+                             BorderBrush="{DynamicResource SeparatorBrush}"
+                             Background="Transparent" Height="20"
+                             Watermark="{DynamicResource MainView_ChildListSearchWatermark}" />
+                    <StackPanel Grid.Row="1" Orientation="Horizontal">
+                        <Border BorderThickness="0,0,0,0">
+                            <TextBlock Text="{DynamicResource MainView_ParentLabel}" Margin="0,0,0,5" FontWeight="Bold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       VerticalAlignment="Bottom" />
+                        </Border>
+                        <Border BorderThickness="1,0,0,0">
+                            <TextBlock Text="{DynamicResource MainView_ChildListInputLabel}" Margin="5,0,0,5"
+                                       FontWeight="Bold"
+                                       Foreground="{DynamicResource TextPrimaryBrush}"
+                                       VerticalAlignment="Bottom" />
+                        </Border>
+                    </StackPanel>
+                    <ListBox ItemsSource="{Binding FilteredChildItems}" MinHeight="125" Margin="0,0,0,5"
+                             DoubleTapped="ListBox_DoubleTapped" Grid.Row="2"
+                             ScrollViewer.HorizontalScrollBarVisibility="Auto"
+                             ScrollViewer.VerticalScrollBarVisibility="Auto"
+                             SelectedItem="{Binding ChildSiderBarSelectItem, Mode=TwoWay}">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <VirtualizingStackPanel ScrollViewer.AllowAutoHide="False" />
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBox.Styles>
+                            <Style Selector="ListBoxItem">
+                                <Setter Property="MinHeight" Value="0" />
+                                <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                                <Setter Property="Padding" Value="9,4,0,9" />
+                            </Style>
+                        </ListBox.Styles>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <TextBlock Text="{Binding}" />
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Grid>
+            </Grid>
+            <TextBox Grid.Row="2" Text="{Binding CurrentDescription}"
+                     TextWrapping="NoWrap" IsReadOnly="{Binding !CanEditNodeDefine}"
+                     Foreground="{DynamicResource TextPrimaryBrush}" MinHeight="0"
+                     Padding="5,5,0,0" CornerRadius="0" DoubleTapped="TextBox_DoubleTapped">
+                <TextBox.KeyBindings>
+                    <KeyBinding Gesture="Enter"
+                                Command="{Binding EditDescriptionCommand}" />
+                </TextBox.KeyBindings>
+            </TextBox>
+        </Grid>
+    </dialogHost:DialogHost>
 </Window>
