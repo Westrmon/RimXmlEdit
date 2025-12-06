@@ -205,7 +205,7 @@ public class Program
 
     private static void Test10()
     {
-        var t = new NodeGenerationService();
+        var t = new NodeGenerationService(new FileFromRule(new ExampleXmlManager()));
         var node = t.Generate(false, "Defs", "ThingDef", "ThingDef");
     }
 
