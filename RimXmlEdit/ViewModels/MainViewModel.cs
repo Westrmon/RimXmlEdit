@@ -139,7 +139,7 @@ public partial class MainViewModel : ViewModelBase
             DefTreeNodes.Clear();
         };
 
-        AppSettings.OnSettingChanged += UpdataSetting;
+        AppSettings.OnSettingChanged += UpdateSetting;
 
         _valueValidationInterval = _setting.ValueValidationInterval;
 

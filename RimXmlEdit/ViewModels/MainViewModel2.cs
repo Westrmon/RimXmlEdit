@@ -103,7 +103,7 @@ public partial class MainViewModel
             ChildViewNode.TagName,
             e.SelectedSecondaryCategory.Name,
             args);
-        var node = BuildFromBlueprint(blueprint, ChildViewNode, _setting.AutoExpandNodes);
+        var node = BuildFromBlueprint(blueprint, ChildViewNode, autoExpend: _setting.AutoExpandNodes);
         node.IsNodeExpanded = true;
         DefTreeNodes.Add(node);
     }
@@ -155,14 +155,14 @@ public partial class MainViewModel
 
         foreach (var childBlueprint in blueprint.Children)
         {
-            var childNode = BuildFromBlueprint(childBlueprint, node);
+            var childNode = BuildFromBlueprint(childBlueprint, node, haveRoot, autoExpend);
             node.Children.Add(childNode);
         }
 
         return node;
     }
 
-    public void UpdataSetting()
+    public void UpdateSetting()
     {
         if (_autoSaveTimer.Interval != _setting.AutoSaveInterval * 60000)
             _autoSaveTimer.Interval = _setting.AutoSaveInterval * 60000;
