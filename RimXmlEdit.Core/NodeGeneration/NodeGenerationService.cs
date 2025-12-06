@@ -15,7 +15,7 @@ public class NodeGenerationService
         var rule4 = fileFromRule;
         _rules = new List<INodeGenerationRule>
         {
-            rule0, rule1, rule4
+            rule4, rule0, rule1
         };
 
         _updateRules = new List<INodeUpdateRule>

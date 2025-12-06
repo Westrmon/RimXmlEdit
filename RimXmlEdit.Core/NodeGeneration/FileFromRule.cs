@@ -14,6 +14,7 @@ public class FileFromRule : INodeGenerationRule, INodeUpdateRule
 
     public bool CanApply(bool isPatch, string parentTagName, string selectedItem, string identification)
     {
+        if (selectedItem == "None") return false;
         if (!string.IsNullOrEmpty(identification))
             _cachedFilters = identification.Split(';',
                 StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);

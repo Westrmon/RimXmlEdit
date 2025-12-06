@@ -25,7 +25,7 @@ public class Program
                 new IMessagePackFormatter[] { new ObjectFieldInfoFormatter() },
                 new IFormatterResolver[] { StandardResolver.Instance }))
             .WithCompression(MessagePackCompression.Lz4Block);
-        Test11();
+        Test6();
     }
 
     private static void Test1()

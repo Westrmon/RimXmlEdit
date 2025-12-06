@@ -179,7 +179,7 @@ public partial class MainViewModel : ViewModelBase
             ChildViewNode.TagName,
             insertItemName,
             string.Empty);
-        var node = BuildFromBlueprint(blueprint, ChildViewNode, _setting.AutoExpandNodes);
+        var node = BuildFromBlueprint(blueprint, ChildViewNode, autoExpend: _setting.AutoExpandNodes);
         node.IsNodeExpanded = true;
         //DefNode node;
         //if (ChildViewNode.TagName == "comps")

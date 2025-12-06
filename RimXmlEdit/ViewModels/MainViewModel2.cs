@@ -87,6 +87,9 @@ public partial class MainViewModel
 
     private void FileExplorerOnOnCreateTemplate(object? sender, TemplateXmlViewModel e)
     {
+        if (e.SelectedPrimaryCategory?.Name == "None")
+            return;
+        
         if (e.SelectedSecondaryCategory == null)
         {
             _log.LogError("Selected template name is null");
