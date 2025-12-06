@@ -63,8 +63,4 @@
         </Compile>
         <Compile Remove="Converter\FormatStringConverter.cs"/>
     </ItemGroup>
-
-    <ItemGroup>
-        <Folder Include="CustomControl\"/>
-    </ItemGroup>
 </Project>

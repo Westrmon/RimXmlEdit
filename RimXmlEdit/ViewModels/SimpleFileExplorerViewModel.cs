@@ -1,3 +1,11 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.Collections.ObjectModel;
+using System.IO;
+using System.Linq;
+using System.Threading.Tasks;
+using Avalonia.Controls;
 using Avalonia.Threading;
 using CommunityToolkit.Mvvm.ComponentModel;
 using CommunityToolkit.Mvvm.Input;
@@ -7,58 +15,41 @@ using RimXmlEdit.Core.Extensions;
 using RimXmlEdit.Core.Utils;
 using RimXmlEdit.Models;
 using RimXmlEdit.Service;
-using RimXmlEdit.Views;
-using System;
-using System.Collections;
-using System.Collections.Generic;
-using System.Collections.ObjectModel;
-using System.Diagnostics;
-using System.IO;
-using System.Linq;
-using System.Threading.Tasks;
+using RimXmlEdit.Views.DialogViews;
 
 namespace RimXmlEdit.ViewModels;
 
 public partial class SimpleFileExplorerViewModel : ObservableObject, ISimpleFileExplorer
 {
-    private string _rootPath;
-
+    private readonly ILogger _log;
+    private readonly string _rootPath;
     private string _currentPath;
-    private bool _isSearched = false;
 
-    [ObservableProperty]
-    private bool _isLoading;
+    [ObservableProperty] private bool _isLoading;
 
-    [ObservableProperty]
-    private string _searchText;
+    private bool _isSearched;
 
-    [ObservableProperty]
-    private bool _isSearchText;
+    [ObservableProperty] private bool _isSearchText;
 
-    public ObservableCollection<FileSystemItemViewModel> Items { get; } = new();
+    [ObservableProperty] private string _searchText;
 
     private FileSystemWatcher? _watcher;
-
-    public event EventHandler<FileSystemItem> OnOpenFile;
-
-    private ILogger _log;
 
     public SimpleFileExplorerViewModel()
     {
         _log = this.Log();
         _rootPath = TempConfig.ProjectPath;
         _currentPath = _rootPath;
-        //MainWindow.OnDialogClosing += MainWindow_OnDialogClosing;
         NavigateTo(_currentPath);
     }
 
-    private void MainWindow_OnDialogClosing(object? sender, DialogClosingEventArgs e)
-    {
-        if (sender is GetTextView && e.Parameter is string text)
-        {
-            Debug.WriteLine(text);
-        }
-    }
+    public ObservableCollection<FileSystemItemViewModel> Items { get; } = new();
+
+    public event EventHandler<FileSystemItem>? OnOpenFile;
+
+    public event EventHandler<TemplateXmlViewModel>? OnCreateTemplate;
+
+    public event Action<string>? OnDeleteFile;
 
     [RelayCommand]
     private void Search(string? str)
@@ -75,8 +66,8 @@ public partial class SimpleFileExplorerViewModel : ObservableObject, ISimpleFile
         {
             var dirInfo = new DirectoryInfo(_currentPath);
             items = dirInfo.EnumerateDirectories("*", SearchOption.AllDirectories)
-                           .Where(e => e.Name.StartsWith(str))
-                           .Select(fsi => new FileSystemItem(fsi.FullName));
+                .Where(e => e.Name.StartsWith(str))
+                .Select(fsi => new FileSystemItem(fsi.FullName));
         }
         else
         {
@@ -89,21 +80,16 @@ public partial class SimpleFileExplorerViewModel : ObservableObject, ISimpleFile
         }
 
         Items.Clear();
-        foreach (var item in items)
-        {
-            Items.Add(new FileSystemItemViewModel(item));
-        }
+        foreach (var item in items) Items.Add(new FileSystemItemViewModel(item));
         _isSearched = true;
     }
 
     private async Task NavigateTo(string? path)
     {
-        if (!_isSearched && string.IsNullOrWhiteSpace(path)
+        if ((!_isSearched && string.IsNullOrWhiteSpace(path))
             || !Directory.Exists(path)
             || Path.GetRelativePath(_rootPath, path).StartsWith(".."))
-        {
             return;
-        }
 
         _currentPath = path;
         IsLoading = true;
@@ -117,19 +103,16 @@ public partial class SimpleFileExplorerViewModel : ObservableObject, ISimpleFile
                 var dirInfo = new DirectoryInfo(path);
                 // Combine directories and files, with directories first
                 var items = dirInfo.EnumerateFileSystemInfos("*", SearchOption.TopDirectoryOnly)
-                                   .Where(fsi => fsi is DirectoryInfo
-                                              || (fsi is FileInfo fi
-                                              && (fi.Extension.Equals(".xml", StringComparison.OrdinalIgnoreCase)
-                                              || fi.Extension.Equals(".png", StringComparison.OrdinalIgnoreCase))))
-                                   .Select(fsi => new FileSystemItem(fsi.FullName))
-                                   .ToList();
+                    .Where(fsi => fsi is DirectoryInfo
+                                  || (fsi is FileInfo fi
+                                      && (fi.Extension.Equals(".xml", StringComparison.OrdinalIgnoreCase)
+                                          || fi.Extension.Equals(".png", StringComparison.OrdinalIgnoreCase))))
+                    .Select(fsi => new FileSystemItem(fsi.FullName))
+                    .ToList();
                 return items;
             });
 
-            foreach (var item in directoryItems)
-            {
-                Items.Add(new FileSystemItemViewModel(item));
-            }
+            foreach (var item in directoryItems) Items.Add(new FileSystemItemViewModel(item));
         }
         catch (UnauthorizedAccessException ex)
         {
@@ -152,10 +135,7 @@ public partial class SimpleFileExplorerViewModel : ObservableObject, ISimpleFile
         }
 
         var parent = Directory.GetParent(_currentPath);
-        if (parent != null)
-        {
-            NavigateTo(parent.FullName);
-        }
+        if (parent != null) NavigateTo(parent.FullName);
     }
 
     [RelayCommand]
@@ -164,11 +144,8 @@ public partial class SimpleFileExplorerViewModel : ObservableObject, ISimpleFile
         if (item == null) return;
 
         if (item.IsDirectory)
-        {
             NavigateTo(item.FullName);
-        }
         else
-        {
             try
             {
                 //Process.Start(new ProcessStartInfo(item.FullName) { UseShellExecute = true });
@@ -177,7 +154,6 @@ public partial class SimpleFileExplorerViewModel : ObservableObject, ISimpleFile
             catch (Exception)
             {
             }
-        }
     }
 
     [RelayCommand]
@@ -189,12 +165,11 @@ public partial class SimpleFileExplorerViewModel : ObservableObject, ISimpleFile
             try
             {
                 if (selectedItem.IsDirectory)
-                {
                     Directory.Delete(selectedItem.FullName, true);
-                }
                 else
                 {
                     File.Delete(selectedItem.FullName);
+                    OnDeleteFile?.Invoke(selectedItem.FullName);
                 }
             }
             catch (Exception)
@@ -208,39 +183,46 @@ public partial class SimpleFileExplorerViewModel : ObservableObject, ISimpleFile
     public void Copy(IEnumerable? selectedItems)
     {
         var items = selectedItems?.OfType<FileSystemItemViewModel>().ToList();
-        if (items != null && items.Any())
-        {
-            ClipboardService.SetCopiedFiles(items.Select(i => i.FullName), isCut: false);
-        }
+        if (items != null && items.Any()) ClipboardService.SetCopiedFiles(items.Select(i => i.FullName), false);
     }
 
     [RelayCommand]
     public void Cut(IEnumerable? selectedItems)
     {
         var items = selectedItems?.OfType<FileSystemItemViewModel>().ToList();
-        if (items != null && items.Any())
-        {
-            ClipboardService.SetCopiedFiles(items.Select(i => i.FullName), isCut: true);
-        }
+        if (items != null && items.Any()) ClipboardService.SetCopiedFiles(items.Select(i => i.FullName), true);
     }
 
     [RelayCommand]
-    public async Task Create()
+    public async Task Create(string createType)
     {
-        var diaglogView = new GetTextView();
+        var isFile = createType == "file";
+        Control diaglogView;
+        if (!isFile)
+            diaglogView = new GetTextView();
+        else
+            diaglogView = new TemplateXmlView();
+
         var result = await DialogHost.Show(diaglogView, "RootDialogHost");
         if (result is string returnedText && !string.IsNullOrEmpty(returnedText))
         {
-            var data = diaglogView.DataContext as GetTextViewModel;
-            var newDir = Path.Combine(_currentPath, returnedText);
-            if (data.IsFolder && !Directory.Exists(newDir))
-                Directory.CreateDirectory(newDir);
-            else if (!data.IsFolder && !File.Exists(newDir))
+            var newPath = Path.Combine(_currentPath, returnedText);
+            if (isFile && diaglogView.DataContext is TemplateXmlViewModel vm)
             {
-                var hasSuffix = returnedText.AsSpan().IndexOf('.') > 0;
-                if (!hasSuffix)
-                    newDir += ".xml";
-                File.Create(newDir).Dispose();
+                if (!File.Exists(newPath))
+                {
+                    var hasSuffix = returnedText.AsSpan().IndexOf('.') > 0;
+                    if (!hasSuffix)
+                        newPath += ".xml";
+                    await File.Create(newPath).DisposeAsync();
+                    OnOpenFile?.Invoke(this, new FileSystemItem(newPath, false));
+                    OnCreateTemplate?.Invoke(diaglogView, vm);
+                }
+            }
+            else if (diaglogView.DataContext is GetTextViewModel)
+            {
+                if (!Directory.Exists(newPath))
+                    Directory.CreateDirectory(newPath);
             }
         }
     }
@@ -254,17 +236,13 @@ public partial class SimpleFileExplorerViewModel : ObservableObject, ISimpleFile
         {
             foreach (var sourcePath in ClipboardService.CopiedFiles)
             {
-                string destPath = Path.Combine(_currentPath, Path.GetFileName(sourcePath));
+                var destPath = Path.Combine(_currentPath, Path.GetFileName(sourcePath));
                 try
                 {
                     if (Directory.Exists(sourcePath)) // It's a directory
-                    {
                         Directory.CreateDirectory(destPath);
-                    }
                     else
-                    {
                         File.Copy(sourcePath, destPath, true);
-                    }
 
                     if (ClipboardService.IsCut)
                     {
@@ -278,10 +256,7 @@ public partial class SimpleFileExplorerViewModel : ObservableObject, ISimpleFile
                 }
             }
 
-            if (ClipboardService.IsCut)
-            {
-                ClipboardService.Clear();
-            }
+            if (ClipboardService.IsCut) ClipboardService.Clear();
         });
     }
 

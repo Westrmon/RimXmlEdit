@@ -1,103 +1,216 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Defs xmlns:meta="RimXmlEdit.Template"
-      meta:defType="Weapon">
+    meta:defType="ThingDef">
 
+    <!-- ======================== -->
+    <!--       条件过滤器定义       -->
+    <!-- ======================== -->
     <meta:FilterDefs>
-        <meta:Filter Name="IsGun" Desc="[类型] 是一把枪械 (否则为近战武器)"/>
-        <meta:Filter Name="IsAdvanced" Desc="[科技] 太空时代科技 (增加造价与属性)"/>
-        <meta:Filter Name="HasArt" Desc="[资源] 使用自定义美术贴图"/>
+        <meta:Filter Name="IsGun" Desc="是否为远程武器（枪械类）" />
+        <meta:Filter Name="IsMelee" Desc="是否为近战武器" />
+        <meta:Filter Name="IsThrown" Desc="是否为投掷武器（如手雷、标枪）" />
+        <meta:Filter Name="IsEnergyWeapon" Desc="是否为能源类武器（如激光、等离子）" />
+        <meta:Filter Name="HasQuality" Desc="是否启用品质系统（CompQuality）" />
+        <meta:Filter Name="HasComps" Desc="是否启用附加组件（Comp）" />
+        <meta:Filter Name="IsConsumable" Desc="是否使用后消耗（如手雷）" />
+        <meta:Filter Name="IsTurretWeapon" Desc="是否作为炮塔武器（gun turret）" />
+        <meta:Filter Name="UseFuel" Desc="武器是否消耗燃料（火焰喷射器）" />
+        <meta:Filter Name="IsDualWieldable" Desc="是否允许双持（MOD 支持）" />
+        <meta:Filter Name="IsHeavy" Desc="是否为重型武器（影响移动）" />
+        <meta:Filter Name="TechAdvanced" Desc="科技等级是否为超科技（Spacer/Ultra/Archotech）" />
+        <meta:Filter Name="HasCraftRecipe" Desc="是否有制作配方（RecipeMaker）" />
     </meta:FilterDefs>
 
-    <ThingDef meta:Name="UniversalWeapon"
-              meta:Desc="通用武器生成器(支持枪械/近战/高科技切换)"
-              ParentName="BaseHumanMakeableGun">
-        <defName>MyNewWeapon</defName>
-        <label meta:If="IsGun">New Gun</label>
-        <label meta:Unless="IsGun">New Sword</label>
-        <description>A weapon created by RimXmlEdit.</description>
+
+    <!-- ======================== -->
+    <!--     武器主体定义块        -->
+    <!-- ======================== -->
+    <ThingDef meta:Name="CustomWeapon"
+        meta:Desc="全功能武器模板，支持远程、近战、投掷、能源、一次性等多类型逻辑"
+        ParentName="BaseWeapon">
+
+        <!-- 基本识别信息 -->
+        <defName>MyWeapon</defName>
+        <label>custom weapon</label>
+        <description>模板武器，可以根据条件生成各种武器特性。</description>
+
+        <!-- 图形信息 -->
         <graphicData>
-            <texPath meta:If="HasArt">Things/Item/Equipment/Weapon/MyCustomTexture</texPath>
-            <texPath meta:Unless="HasArt">Things/Item/Equipment/Weapon/Placeholder</texPath>
+            <texPath>Things/Item/MyWeapon</texPath>
             <graphicClass>Graphic_Single</graphicClass>
+            <drawSize>1.0</drawSize>
         </graphicData>
-        <statBases>
-            <WorkToMake>10000</WorkToMake>
-            <Mass>2.5</Mass>
-            <MarketValue meta:If="IsAdvanced">2500</MarketValue>
-            <MarketValue meta:Unless="IsAdvanced">500</MarketValue>
-            <AccuracyTouch meta:If="IsGun">0.80</AccuracyTouch>
-            <AccuracyShort meta:If="IsGun">0.85</AccuracyShort>
-            <AccuracyMedium meta:If="IsGun">0.75</AccuracyMedium>
-            <AccuracyLong meta:If="IsGun">0.60</AccuracyLong>
-            <RangedWeapon_Cooldown meta:If="IsGun">1.5</RangedWeapon_Cooldown>
-        </statBases>
-        <costList>
-            <Steel>60</Steel>
-            <ComponentSpacer meta:If="IsAdvanced">2</ComponentSpacer>
-            <ComponentIndustrial meta:Unless="IsAdvanced">5</ComponentIndustrial>
-            <WoodLog meta:Unless="IsGun">20</WoodLog>
+        <uiIconOffset>(0,0)</uiIconOffset>
+        <equippedAngleOffset>0</equippedAngleOffset>
+
+        <thingClass>ThingWithComps</thingClass>
+        <category>Item</category>
+
+        <!-- 科技等级 -->
+        <techLevel meta:If="TechAdvanced">Spacer</techLevel>
+        <techLevel meta:Unless="TechAdvanced">Industrial</techLevel>
+
+
+        <!-- ======================== -->
+        <!--        制作成本区         -->
+        <!-- ======================== -->
+        <costList meta:If="HasCraftRecipe">
+            <Steel>50</Steel>
+            <ComponentIndustrial>3</ComponentIndustrial>
         </costList>
+
+        <costStuffCount meta:If="HasCraftRecipe">40</costStuffCount>
+
+        <recipeMaker meta:If="HasCraftRecipe">
+            <workAmount>9000</workAmount>
+            <skillRequirements>
+                <Crafting>6</Crafting>
+            </skillRequirements>
+        </recipeMaker>
+
+
+        <!-- ======================== -->
+        <!--       制造研究前置        -->
+        <!-- ======================== -->
+        <researchPrerequisites meta:If="HasCraftRecipe">
+            <li>MicroelectronicsBasics</li>
+        </researchPrerequisites>
+
+
+        <!-- ======================== -->
+        <!--      statBases 通用       -->
+        <!-- ======================== -->
+        <statBases>
+            <!-- 重型武器更重 -->
+            <Mass meta:If="IsHeavy">8</Mass>
+            <Mass meta:Unless="IsHeavy">2</Mass>
+
+            <MarketValue>600</MarketValue>
+
+            <!-- 近战 -->
+            <MeleeWeapon_AverageDPS meta:If="IsMelee">10</MeleeWeapon_AverageDPS>
+
+            <!-- 远程 -->
+            <RangedWeapon_Cooldown meta:If="IsGun">1.2</RangedWeapon_Cooldown>
+
+            <!-- 投掷类 -->
+            <RangedWeapon_Cooldown meta:If="IsThrown">1.5</RangedWeapon_Cooldown>
+        </statBases>
+
+
+        <!-- ======================== -->
+        <!--     装备后属性加成        -->
+        <!-- ======================== -->
+        <equippedStatOffsets>
+            <MoveSpeed meta:If="IsHeavy">-0.20</MoveSpeed>
+        </equippedStatOffsets>
+
+
+        <!-- ======================== -->
+        <!--       近战攻击工具        -->
+        <!-- ======================== -->
+        <tools meta:If="IsMelee">
+            <li>
+                <label>strike</label>
+                <capacities>
+                    <li>Blunt</li>
+                </capacities>
+                <power>12</power>
+                <cooldownTime>1.6</cooldownTime>
+            </li>
+        </tools>
+
+
+        <!-- ======================== -->
+        <!--        远程武器 Verbs     -->
+        <!-- ======================== -->
         <verbs meta:If="IsGun">
             <li>
                 <verbClass>Verb_Shoot</verbClass>
-                <hasStandardCommand>true</hasStandardCommand>
-                <defaultProjectile meta:If="IsAdvanced">Bullet_ChargeRifle</defaultProjectile>
-                <defaultProjectile meta:Unless="IsAdvanced">Bullet_AssaultRifle</defaultProjectile>
-
-                <warmupTime>1.0</warmupTime>
-                <range>30.9</range>
-                <burstShotCount meta:If="IsAdvanced">3</burstShotCount>
-                <ticksBetweenBurstShots meta:If="IsAdvanced">12</ticksBetweenBurstShots>
-
-                <soundCast>Shot_ChargeRifle</soundCast>
-                <soundCastTail>GunTail_Medium</soundCastTail>
-                <muzzleFlashScale>9</muzzleFlashScale>
+                <warmupTime>0.6</warmupTime>
+                <range>32</range>
+                <burstShotCount>3</burstShotCount>
+                <muzzleFlashScale meta:If="IsEnergyWeapon">0.0</muzzleFlashScale>
             </li>
         </verbs>
-        <tools>
-            <li meta:If="IsGun">
-                <label>stock</label>
-                <capacities>
-                    <li>Blunt</li>
-                </capacities>
-                <power>9</power>
-                <cooldownTime>2</cooldownTime>
+
+
+        <!-- ======================== -->
+        <!--       投掷武器 Verbs      -->
+        <!-- ======================== -->
+        <verbs meta:If="IsThrown">
+            <li>
+                <verbClass>Verb_LaunchProjectile</verbClass>
+                <warmupTime>0.3</warmupTime>
+                <range>20</range>
             </li>
-            <li meta:If="IsGun">
-                <label>barrel</label>
-                <capacities>
-                    <li>Blunt</li>
-                    <li>Poke</li>
-                </capacities>
-                <power>9</power>
-                <cooldownTime>2</cooldownTime>
+        </verbs>
+
+
+        <!-- ======================== -->
+        <!--      投掷武器弹丸定义     -->
+        <!-- ======================== -->
+        <projectile meta:If="IsThrown">
+            <damageAmountBase>50</damageAmountBase>
+            <speed>30</speed>
+            <damageDef>Bomb</damageDef>
+            <explosionRadius>3</explosionRadius>
+        </projectile>
+
+
+        <!-- ======================== -->
+        <!--      一次性（消耗）武器    -->
+        <!-- ======================== -->
+        <stackLimit meta:If="IsConsumable">1</stackLimit>
+        <destroyOnDrop meta:If="IsConsumable">true</destroyOnDrop>
+
+
+        <!-- ======================== -->
+        <!--        燃料驱动武器        -->
+        <!-- ======================== -->
+        <comps meta:If="UseFuel">
+            <li>
+                <compClass>CompProperties_Refuelable</compClass>
+                <fuelCapacity>100</fuelCapacity>
+                <consumptionPerUse>3</consumptionPerUse>
             </li>
-            <li meta:Unless="IsGun">
-                <label>handle</label>
-                <capacities>
-                    <li>Blunt</li>
-                </capacities>
-                <power>8</power>
-                <cooldownTime>1.6</cooldownTime>
+        </comps>
+
+
+        <!-- ======================== -->
+        <!--         品质系统           -->
+        <!-- ======================== -->
+        <comps meta:If="HasQuality">
+            <li>
+                <compClass>CompQuality</compClass>
             </li>
-            <li meta:Unless="IsGun">
-                <label>point</label>
-                <capacities>
-                    <li>Stab</li>
-                </capacities>
-                <power meta:If="IsAdvanced">30</power>
-                <power meta:Unless="IsAdvanced">18</power>
-                <cooldownTime>2</cooldownTime>
+        </comps>
+
+
+        <!-- ======================== -->
+        <!--         自定义 comps       -->
+        <!-- ======================== -->
+        <comps meta:If="HasComps">
+            <li>
+                <compClass>CompProperties_Usable</compClass>
             </li>
-            <li meta:Unless="IsGun">
-                <label>edge</label>
-                <capacities>
-                    <li>Cut</li>
-                </capacities>
-                <power meta:If="IsAdvanced">30</power>
-                <power meta:Unless="IsAdvanced">20</power>
-                <cooldownTime>1.8</cooldownTime>
-            </li>
-        </tools>
+        </comps>
+
+
+        <!-- ======================== -->
+        <!--         炮塔用武器        -->
+        <!-- ======================== -->
+        <building meta:If="IsTurretWeapon">
+            <turretGunDef>MyWeapon</turretGunDef>
+        </building>
+
+
+        <!-- ======================== -->
+        <!--         双持支持           -->
+        <!-- ======================== -->
+        <statBases meta:If="IsDualWieldable">
+            <DualWieldCompatibility>1</DualWieldCompatibility>
+        </statBases>
+
     </ThingDef>
 </Defs>

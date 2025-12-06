@@ -6,21 +6,25 @@ public class NodeGenerationService
     private readonly List<INodeGenerationRule> _rules;
     private readonly List<INodeUpdateRule> _updateRules;
 
-    public NodeGenerationService()
+    public NodeGenerationService(FileFromRule fileFromRule)
     {
         var rule0 = new CompsListRule();
         var rule1 = new ThingDefTemplateRule();
         var rule2 = new DefaultNodeRule();
         var rule3 = new PatchesListRule();
+        var rule4 = fileFromRule;
         _rules = new List<INodeGenerationRule>
         {
-            rule0, rule1, rule2
+            rule0, rule1, rule4
         };
 
         _updateRules = new List<INodeUpdateRule>
         {
-            rule3, rule2
+            rule3
         };
+        
+        _rules.Add(rule2);
+        _updateRules.Add(rule2);
     }
 
     public NodeBlueprint Generate(bool isPatch, string parentTagName, string selectedItem, string identification)

@@ -1,0 +1,112 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs xmlns:meta="RimXmlEdit.Template"
+    meta:defType="BackstoryDef">
+
+    <!-- ========================= -->
+    <!--     可用过滤器定义        -->
+    <!-- ========================= -->
+    <meta:FilterDefs>
+        <meta:Filter Name="IsChildhood" Desc="此背景是否为童年背景（slot = Childhood）" />
+        <meta:Filter Name="IsAdulthood" Desc="此背景是否为成年背景（slot = Adulthood）" />
+        <meta:Filter Name="AffectsSkills" Desc="此背景是否影响技能增益或禁用技能" />
+        <meta:Filter Name="DisablesWork" Desc="此背景是否禁用部分工作类型" />
+        <meta:Filter Name="IsRare" Desc="此背景是否为稀有背景（commonality较低）" />
+        <meta:Filter Name="HasForcedTraits" Desc="此背景是否具有强制特性" />
+    </meta:FilterDefs>
+
+    <!-- ========================================== -->
+    <!--   BackstoryDef 模板（示例：可切换条件）     -->
+    <!-- ========================================== -->
+    <BackstoryDef meta:Name="CustomBackstoryTemplate"
+        meta:Desc="自定义背景故事模板，可按条件生成童年/成年内容，并控制技能、特性、稀有度等。">
+
+        <!-- 必填基础信息 -->
+        <defName>Custom_Backstory</defName>
+        <title>Custom Backstory</title>
+        <titleShort>Custom</titleShort>
+        <baseDesc>这是一个可根据过滤器动态生成内容的背景故事模板。</baseDesc>
+
+        <!-- Slot：童年或成年，受过滤器控制 -->
+        <slot meta:If="IsChildhood">Childhood</slot>
+        <slot meta:If="IsAdulthood">Adulthood</slot>
+
+        <!-- ========= -->
+        <!-- 技能设置 -->
+        <!-- ========= -->
+        <skillGains meta:If="AffectsSkills">
+            <Cooking>3</Cooking>
+            <Shooting>1</Shooting>
+            <Animals>-2</Animals>
+        </skillGains>
+
+        <skillDisables meta:If="AffectsSkills">
+            <li>Artistic</li>
+        </skillDisables>
+
+        <!-- ================= -->
+        <!-- 工作禁用相关设置 -->
+        <!-- ================= -->
+        <workDisables meta:If="DisablesWork">
+            <li>Violent</li>
+            <li>Firefighting</li>
+        </workDisables>
+
+        <requiredWorkTags meta:If="DisablesWork">
+            <li>Intellectual</li>
+        </requiredWorkTags>
+
+        <!-- ============= -->
+        <!--  特性相关设置 -->
+        <!-- ============= -->
+        <forcedTraits meta:If="HasForcedTraits">
+            <li>
+                <defName>Industrious</defName>
+                <degree>0</degree>
+            </li>
+        </forcedTraits>
+
+        <requiredTraits>
+            <li>Jogger</li>
+        </requiredTraits>
+
+        <disallowedTraits>
+            <li>Pyromaniac</li>
+        </disallowedTraits>
+
+        <!-- ==================== -->
+        <!--   生成相关设置       -->
+        <!-- ==================== -->
+        <spawnCategories>
+            <li>Trader</li>
+            <li>Civil</li>
+        </spawnCategories>
+
+        <shuffleable>false</shuffleable>
+
+        <!-- 体型设置（可选） -->
+        <bodyTypeGlobal>Thin</bodyTypeGlobal>
+        <bodyTypeMale>Male</bodyTypeMale>
+        <bodyTypeFemale>Female</bodyTypeFemale>
+
+        <!-- 发型/胡须标签 -->
+        <hairTags>
+            <li>Urban</li>
+        </hairTags>
+
+        <beardTags>
+            <li>FullBeard</li>
+        </beardTags>
+
+        <!-- ============= -->
+        <!-- 稀有度与权重  -->
+        <!-- ============= -->
+        <commonality meta:If="IsRare">0.1</commonality>
+        <commonality meta:Unless="IsRare">1.0</commonality>
+
+        <weight>0.5</weight>
+        <minAge>10</minAge>
+        <maxAge>80</maxAge>
+
+    </BackstoryDef>
+
+</Defs>

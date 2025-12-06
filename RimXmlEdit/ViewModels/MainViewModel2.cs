@@ -1,4 +1,5 @@
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Timers;
@@ -15,8 +16,8 @@ namespace RimXmlEdit.ViewModels;
 
 public partial class MainViewModel
 {
-    private CancellationTokenSource? _debounceCts;
     private readonly Lock _saveLock = new();
+    private CancellationTokenSource? _debounceCts;
     private int _valueValidationInterval;
 
     // 进行初步验证输入值的合法性
@@ -71,18 +72,37 @@ public partial class MainViewModel
         {
             using (_saveLock.EnterScope())
             {
-                if (!string.IsNullOrEmpty(_currentFilePath))
-                {
-                    _defManager.SaveToFile(_currentFilePath);
-                    _defDefineInfo.Save();
-                    _log.LogNotify("[{Time}] Success to save", DateTime.Now);
-                }
+                if (string.IsNullOrEmpty(_currentFilePath)) return;
+                
+                _defManager.SaveToFile(_currentFilePath);
+                _defDefineInfo.Save();
+                _log.LogNotify("[{Time}] Success to save", DateTime.Now);
             }
         }
         catch (Exception ex)
         {
             _log.LogError(ex, "Save Error");
         }
+    }
+
+    private void FileExplorerOnOnCreateTemplate(object? sender, TemplateXmlViewModel e)
+    {
+        if (e.SelectedSecondaryCategory == null)
+        {
+            _log.LogError("Selected template name is null");
+            return;
+        }
+
+        var filter = e.Options.Where(t => t.IsSelected).Select(g => g.Title);
+        var args = $"{string.Join(';', filter)}";
+        var blueprint = NodeGenerationService.Generate(
+            DefNodeManager.IsPatch,
+            ChildViewNode.TagName,
+            e.SelectedSecondaryCategory.Name,
+            args);
+        var node = BuildFromBlueprint(blueprint, ChildViewNode, _setting.AutoExpandNodes);
+        node.IsNodeExpanded = true;
+        DefTreeNodes.Add(node);
     }
 
     internal static void HandleNodeAttributeChanged(object? sender, AttributeChangedEventArgs e)
@@ -101,7 +121,11 @@ public partial class MainViewModel
         }
     }
 
-    public static DefNode BuildFromBlueprint(NodeBlueprint blueprint, DefNode parent, bool haveRoot = false)
+    public static DefNode BuildFromBlueprint(
+        NodeBlueprint blueprint,
+        DefNode parent,
+        bool haveRoot = false,
+        bool autoExpend = false)
     {
         DefNode node;
         if (haveRoot)
@@ -111,6 +135,7 @@ public partial class MainViewModel
         else
         {
             node = new DefNode(blueprint.TagName, parent);
+            node.IsNodeExpanded = autoExpend;
             node.AttributeChanged += HandleNodeAttributeChanged;
         }
 

@@ -124,9 +124,19 @@ public partial class MainViewModel : ViewModelBase
             SelectedSide = "root";
             _currentFilePath = e.FullName;
             _childViewNode = DefNodeManager.RootNode;
-            _defManager.LoadFromExtendXml(_currentFilePath);
             SearchChildText = string.Empty;
+            if (e.NeedLoadXml)
+                _defManager.LoadFromExtendXml(_currentFilePath);
             _ = UpdateChildList();
+        };
+
+        _fileExplorer.OnCreateTemplate += FileExplorerOnOnCreateTemplate;
+        _fileExplorer.OnDeleteFile += path =>
+        {
+            if (path != _currentFilePath) return;
+            _currentFilePath = string.Empty;
+            NodeXmlContent = string.Empty;
+            DefTreeNodes.Clear();
         };
 
         AppSettings.OnSettingChanged += UpdataSetting;
@@ -169,7 +179,7 @@ public partial class MainViewModel : ViewModelBase
             ChildViewNode.TagName,
             insertItemName,
             string.Empty);
-        var node = BuildFromBlueprint(blueprint, ChildViewNode);
+        var node = BuildFromBlueprint(blueprint, ChildViewNode, _setting.AutoExpandNodes);
         node.IsNodeExpanded = true;
         //DefNode node;
         //if (ChildViewNode.TagName == "comps")

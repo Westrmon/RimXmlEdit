@@ -43,6 +43,7 @@ public static class ServiceCollectionExtensions
         collection.AddTransient<GetTextViewModel>();
         collection.AddTransient<SettingsViewModel>();
         collection.AddTransient<AboutViewModel>();
+        collection.AddTransient<TemplateXmlViewModel>();
 
         collection.AddSingleton<TempConfig>();
         collection.AddSingleton<ModParser>();

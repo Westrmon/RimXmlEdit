@@ -29,7 +29,7 @@
 			<Color x:Key="TextSecondaryColor">#616161</Color>
 			<Color x:Key="TextDisabledColor">#9E9E9E</Color>
 			<!-- 强调文本/选中文字：灰白（避免 #FFFFFF 纯白） -->
-			<Color x:Key="TextOnAccentColor">#3F3DCA</Color>
+			<Color x:Key="TextOnAccentColor">#FF03F3</Color>
 
 			<!-- 边框和分隔符 -->
 			<Color x:Key="BorderColor">#D0D0D0</Color>
@@ -39,7 +39,7 @@
 			<!-- AccentColor：标准的 Visual Studio 蓝 -->
 			<Color x:Key="AccentColor">#007ACC</Color>
 			<!-- 关键修改：选中背景色改为深色，以确保 TextOnAccentColor (浅色) 清晰可见 -->
-			<Color x:Key="SelectionBackgroundColor">#296E9B</Color>
+			<Color x:Key="SelectionBackgroundColor">#91CAF8</Color>
 			<Color x:Key="FocusBorderColor">#007ACC</Color>
 
 			<!-- 状态颜色 (降低饱和度，不刺眼) -->

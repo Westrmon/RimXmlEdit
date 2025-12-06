@@ -1,25 +1,15 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace RimXmlEdit.Models;
 
 public class FileSystemItem
 {
-    public string Name { get; }
-    public string FullName { get; }
-    public bool IsDirectory { get; }
-    public long Size { get; }
-    public DateTime LastModified { get; }
-
-    public FileSystemItem(string path)
+    public FileSystemItem(string path, bool needLoadXml = true)
     {
         FullName = path;
         IsDirectory = Directory.Exists(path);
-
+        NeedLoadXml = needLoadXml;
         if (IsDirectory)
         {
             var dirInfo = new DirectoryInfo(path);
@@ -35,4 +25,11 @@ public class FileSystemItem
             Size = fileInfo.Length;
         }
     }
+
+    public string Name { get; }
+    public string FullName { get; }
+    public bool IsDirectory { get; }
+    public long Size { get; }
+    public DateTime LastModified { get; }
+    public bool NeedLoadXml { get; }
 }

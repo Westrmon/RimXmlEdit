@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs xmlns:meta="RimXmlEdit.Template"
+    meta:defType="IncidentDef">
+
+    <!-- ========================= -->
+    <!--     可用过滤器定义区       -->
+    <!-- ========================= -->
+    <meta:FilterDefs>
+        <meta:Filter Name="IsRaid" Desc="是否为袭击事件（影响事件类、威胁等级等）" />
+        <meta:Filter Name="IsTrader" Desc="是否为商队事件（事件类型为交易相关）" />
+        <meta:Filter Name="IsPositiveEvent" Desc="是否为正面事件（如奖励、掉落、访客）" />
+        <meta:Filter Name="IsNegativeEvent" Desc="是否为负面事件（如疾病、灾害、袭击）" />
+        <meta:Filter Name="RequiresMap" Desc="该事件是否需要有玩家地图存在" />
+        <meta:Filter Name="IsSpaceEvent" Desc="是否为太空类事件（可开启 forceNoGravity）" />
+    </meta:FilterDefs>
+
+
+    <!-- ========================= -->
+    <!--      IncidentDef 模板      -->
+    <!-- ========================= -->
+    <IncidentDef meta:Name="CustomIncident"
+        meta:Desc="自定义事件模板（可切换袭击、商队、正面事件、负面事件、太空事件等）">
+
+        <!-- 基础标识 -->
+        <defName>MyCustomIncident</defName>
+        <label>custom incident</label>
+
+        <!-- 信件内容 -->
+        <letterLabel>Custom Incident Arrived</letterLabel>
+        <letterText>Something has happened in your colony.</letterText>
+
+        <!-- 事件类：根据类型切换 -->
+        <incidentClass meta:If="IsRaid">IncidentWorker_RaidEnemy</incidentClass>
+        <incidentClass meta:If="IsTrader">IncidentWorker_TraderCaravanArrival</incidentClass>
+        <incidentClass meta:Unless="IsRaid|IsTrader">IncidentWorker_Misc</incidentClass>
+
+        <!-- 基础概率 -->
+        <baseChance>1.0</baseChance>
+
+        <!-- ========================= -->
+        <!--        发生条件块          -->
+        <!-- ========================= -->
+        <allowedBiomes>
+            <li>TemperateForest</li>
+            <li>Tundra</li>
+            <li meta:If="IsSpaceEvent">Space</li>
+        </allowedBiomes>
+
+        <allowedSeason>PermanentSummer</allowedSeason>
+
+        <minPopulation meta:If="IsRaid">3</minPopulation>
+        <minPopulation meta:Unless="IsRaid">0</minPopulation>
+
+        <minWealth meta:If="IsNegativeEvent">5000</minWealth>
+        <minWealth meta:If="IsPositiveEvent">0</minWealth>
+
+        <minColonyDistance>0</minColonyDistance>
+        <maxColonyDistance>999</maxColonyDistance>
+
+        <!-- ========================= -->
+        <!--        参数设置块          -->
+        <!-- ========================= -->
+        <pointsFactor meta:If="IsRaid">1.2</pointsFactor>
+        <pointsFactor meta:Unless="IsRaid">1.0</pointsFactor>
+
+        <threatScale meta:If="IsRaid">1.0</threatScale>
+        <threatScale meta:If="IsNegativeEvent">0.6</threatScale>
+        <threatScale meta:If="IsPositiveEvent">0.0</threatScale>
+
+        <forceNoGravity meta:If="IsSpaceEvent">true</forceNoGravity>
+
+        <queueable>true</queueable>
+
+        <!-- ========================= -->
+        <!--        信件设置块          -->
+        <!-- ========================= -->
+        <letterDef>PositiveEvent</letterDef>
+
+        <letterHyperlinkThingDefs>
+            <li meta:If="IsTrader">Silver</li>
+            <li meta:If="IsPositiveEvent">ComponentIndustrial</li>
+            <li meta:If="IsRaid">HumanLeather</li>
+        </letterHyperlinkThingDefs>
+
+        <sendLetter meta:If="IsPositiveEvent">true</sendLetter>
+        <sendLetter meta:If="IsNegativeEvent">true</sendLetter>
+        <sendLetter meta:If="IsRaid">true</sendLetter>
+        <sendLetter meta:Unless="IsPositiveEvent|IsNegativeEvent|IsRaid">false</sendLetter>
+
+        <letterTimeoutDays>5</letterTimeoutDays>
+
+    </IncidentDef>
+</Defs>

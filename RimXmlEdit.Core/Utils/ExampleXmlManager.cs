@@ -145,8 +145,21 @@ public class ExampleXmlManager
                 var usedFilters = new HashSet<string>();
                 foreach (var el in node.DescendantsAndSelf())
                 {
-                    if (el.Attribute(MetaNs + "If")?.Value is { } s1) usedFilters.Add(s1);
-                    if (el.Attribute(MetaNs + "Unless")?.Value is { } s2) usedFilters.Add(s2);
+                    if (el.Attribute(MetaNs + "If")?.Value is { } s1)
+                    {
+                        foreach (var item in s1.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                        {
+                            usedFilters.Add(item);
+                        }
+                        
+                    }
+                    if (el.Attribute(MetaNs + "Unless")?.Value is { } s2)
+                    {
+                        foreach (var item in s2.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
+                        {
+                            usedFilters.Add(item);
+                        }
+                    }
                 }
 
                 var filterMap = new Dictionary<string, string>();
@@ -179,10 +192,19 @@ public class ExampleXmlManager
         {
             var remove = false;
 
-            if (child.Attribute(MetaNs + "If")?.Value is { } ifVal && !filters.Contains(ifVal))
-                remove = true;
-            if (!remove && child.Attribute(MetaNs + "Unless")?.Value is { } unlessVal && filters.Contains(unlessVal))
-                remove = true;
+            if (child.Attribute(MetaNs + "If")?.Value is { } ifVal)
+            {
+                if (ifVal.Split('|',  StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .All(x => !filters.Contains(x))) 
+                    remove = true;
+            }
+
+            if (!remove && child.Attribute(MetaNs + "Unless")?.Value is { } unlessVal)
+            {
+                if (unlessVal.Split('|',  StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .All(x => filters.Contains(x))) 
+                    remove = true;
+            }
 
             if (remove)
                 child.Remove();

@@ -21,7 +21,8 @@
         MinHeight="600" MinWidth="900"
         Height="670" Width="1170">
     <dialogHost:DialogHost Identifier="RootDialogHost"
-                           DialogClosing="DialogHost_DialogClosing">
+                           DialogClosing="DialogHost_DialogClosing"
+                           Background="{DynamicResource AppBackgroundBrush}">
         <Grid RowDefinitions="Auto, *">
             <!-- Row 0: Menu Bar -->
             <Menu Grid.Row="0" Background="{DynamicResource Layer1BackgroundColor}">

@@ -18,7 +18,7 @@ public class FileFromRule : INodeGenerationRule, INodeUpdateRule
             _cachedFilters = identification.Split(';',
                 StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries);
         else
-            _cachedFilters = Array.Empty<string>();
+            return false;
 
         var templates = _exampleXmlManager.GetExampleXmlList();
         return templates.ContainsKey(selectedItem);
@@ -26,7 +26,7 @@ public class FileFromRule : INodeGenerationRule, INodeUpdateRule
 
     public NodeBlueprint CreateBlueprint(string selectedItem)
     {
-        var bp = _exampleXmlManager.CreateBlueprint(selectedItem, _cachedFilters.Skip(1).ToArray());
+        var bp = _exampleXmlManager.CreateBlueprint(selectedItem, _cachedFilters);
         return bp ?? NodeBlueprint.None;
     }
 

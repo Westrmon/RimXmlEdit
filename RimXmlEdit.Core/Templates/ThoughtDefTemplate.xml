@@ -1,0 +1,92 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs xmlns:meta="RimXmlEdit.Template"
+    meta:defType="ThoughtDef">
+
+    <!-- ======================== -->
+    <!--       可用过滤器定义       -->
+    <!-- ======================== -->
+    <meta:FilterDefs>
+        <meta:Filter Name="IsMemory" Desc="是否为记忆类想法（如事件触发）" />
+        <meta:Filter Name="IsObservation" Desc="是否为观察类想法（如环境触发）" />
+        <meta:Filter Name="IsSocialThought" Desc="是否为社交类想法" />
+        <meta:Filter Name="HasStages" Desc="是否拥有多个阶段（stages）" />
+        <meta:Filter Name="IsPositive" Desc="是否为正面心情影响" />
+        <meta:Filter Name="IsNegative" Desc="是否为负面心情影响" />
+    </meta:FilterDefs>
+
+    <!-- ======================== -->
+    <!--        想法模板定义        -->
+    <!-- ======================== -->
+    <ThoughtDef meta:Name="CustomThoughtTemplate"
+        meta:Desc="可通过过滤器组合生成不同类型的想法模板"
+        ParentName="ThoughtDef">
+
+        <!-- 基础内容 -->
+        <defName>MyCustomThought</defName>
+        <label>Custom Thought</label>
+        <description>这是一个自定义想法的模板描述。</description>
+
+        <!-- ======================== -->
+        <!--         思维类型          -->
+        <!-- ======================== -->
+
+        <thoughtClass meta:If="IsMemory">Thought_Memory</thoughtClass>
+        <thoughtClass meta:If="IsObservation">Thought_Observation</thoughtClass>
+        <thoughtClass meta:Unless="IsMemory|IsObservation">Thought_Situational</thoughtClass>
+
+        <!-- ======================== -->
+        <!--         心情影响          -->
+        <!-- ======================== -->
+
+        <baseMoodEffect meta:If="IsPositive">6</baseMoodEffect>
+        <baseMoodEffect meta:If="IsNegative">-8</baseMoodEffect>
+        <baseMoodEffect meta:Unless="IsPositive|IsNegative">0</baseMoodEffect>
+
+        <stackLimit>3</stackLimit>
+        <stackedEffectMultiplier>0.5</stackedEffectMultiplier>
+
+        <!-- 想法持续时间（仅记忆类常用） -->
+        <durationDays meta:If="IsMemory">3</durationDays>
+
+        <!-- ======================== -->
+        <!--      多阶段想法配置        -->
+        <!-- ======================== -->
+        <stages meta:If="HasStages">
+            <li>
+                <label>Minor</label>
+                <baseMoodEffect>-3</baseMoodEffect>
+            </li>
+            <li>
+                <label>Major</label>
+                <baseMoodEffect>-8</baseMoodEffect>
+            </li>
+        </stages>
+
+        <!-- ======================== -->
+        <!--        触发与抵消          -->
+        <!-- ======================== -->
+
+        <!-- 抵消此想法的特性 -->
+        <nullifyingTraits>
+            <li>Optimist</li>
+            <li meta:If="IsNegative">IronWilled</li>
+        </nullifyingTraits>
+
+        <!-- 非殖民者是否无效 -->
+        <nullifiedIfNotColonist>true</nullifiedIfNotColonist>
+
+        <!-- 是否为社交类想法 -->
+        <socialThought meta:If="IsSocialThought">true</socialThought>
+        <socialThought meta:Unless="IsSocialThought">false</socialThought>
+
+        <!-- 触发另一个想法（如连锁反应） -->
+        <thoughtToMake meta:If="IsMemory">WitnessedDeath</thoughtToMake>
+
+        <!-- ======================== -->
+        <!--       观察、条件示例       -->
+        <!-- ======================== -->
+        <requiredMinimumExpectations meta:If="IsObservation">Moderate</requiredMinimumExpectations>
+
+    </ThoughtDef>
+
+</Defs>

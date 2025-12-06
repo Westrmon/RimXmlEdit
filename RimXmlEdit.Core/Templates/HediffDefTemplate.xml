@@ -1,0 +1,131 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs xmlns:meta="RimXmlEdit.Template"
+    meta:defType="HediffDef">
+
+    <!-- ======================== -->
+    <!--       可用过滤器定义       -->
+    <!-- ======================== -->
+    <meta:FilterDefs>
+        <meta:Filter Name="IsDisease" Desc="是否为疾病类健康状态（如流感、瘟疫）" />
+        <meta:Filter Name="IsInjury" Desc="是否为伤害类健康状态（如割伤、钝击伤）" />
+        <meta:Filter Name="IsAddiction" Desc="是否为成瘾类健康状态（如酒精成瘾）" />
+        <meta:Filter Name="IsImplant" Desc="是否为植入物（机械体、仿生部件）" />
+        <meta:Filter Name="IsTendable" Desc="健康状态是否可包扎或治疗" />
+        <meta:Filter Name="HasStages" Desc="是否具有多阶段严重度" />
+    </meta:FilterDefs>
+
+    <!-- ======================== -->
+    <!--       健康状态模板定义      -->
+    <!-- ======================== -->
+    <HediffDef meta:Name="CustomHediffTemplate"
+        meta:Desc="可生成伤害、疾病、成瘾、植入物等不同类型的健康状态"
+        ParentName="HediffDef">
+
+        <!-- 基础信息 -->
+        <defName>MyCustomHediff</defName>
+        <label>Custom Hediff</label>
+
+        <!-- ======================== -->
+        <!--         类型选择           -->
+        <!-- ======================== -->
+
+        <!-- 疾病 -->
+        <hediffClass meta:If="IsDisease">HediffWithComps</hediffClass>
+
+        <!-- 受伤 -->
+        <hediffClass meta:If="IsInjury">Hediff_Injury</hediffClass>
+
+        <!-- 成瘾 -->
+        <hediffClass meta:If="IsAddiction">Hediff_Addiction</hediffClass>
+
+        <!-- 植入物（义体、仿生体） -->
+        <hediffClass meta:If="IsImplant">Hediff_Implant</hediffClass>
+
+        <!-- 默认类型 -->
+        <hediffClass meta:Unless="IsDisease|IsInjury|IsAddiction|IsImplant">
+            HediffWithComps
+        </hediffClass>
+
+        <!-- 致命严重度：疾病/伤害一般使用 -->
+        <lethalSeverity meta:If="IsDisease">1.0</lethalSeverity>
+        <lethalSeverity meta:If="IsInjury">1.0</lethalSeverity>
+
+        <!-- 植入物与成瘾通常不致命 -->
+        <lethalSeverity meta:If="IsImplant">0</lethalSeverity>
+        <lethalSeverity meta:If="IsAddiction">0</lethalSeverity>
+
+        <!-- ======================== -->
+        <!--      健康状态阶段配置      -->
+        <!-- ======================== -->
+        <stages meta:If="HasStages">
+            <li>
+                <label>Mild</label>
+                <minSeverity>0.00</minSeverity>
+                <painOffset meta:If="IsInjury">0.1</painOffset>
+                <capMods meta:If="IsDisease">
+                    <li>
+                        <capacity>Consciousness</capacity>
+                        <offset>-0.1</offset>
+                    </li>
+                </capMods>
+            </li>
+            <li>
+                <label>Severe</label>
+                <minSeverity>0.40</minSeverity>
+                <painOffset meta:If="IsInjury">0.3</painOffset>
+                <capMods meta:If="IsDisease">
+                    <li>
+                        <capacity>Consciousness</capacity>
+                        <offset>-0.3</offset>
+                    </li>
+                </capMods>
+            </li>
+        </stages>
+
+        <!-- ======================== -->
+        <!--      疾病/成瘾相关设定      -->
+        <!-- ======================== -->
+
+        <makesSickThought meta:If="IsDisease">true</makesSickThought>
+        <blockImmunity meta:If="IsDisease">false</blockImmunity>
+
+        <!-- 成瘾恢复物品 -->
+        <curedByItem meta:If="IsAddiction">Alcohol</curedByItem>
+
+        <!-- 晴天免疫（用于某些环境疾病） -->
+        <immuneToClearWeather meta:If="IsDisease">false</immuneToClearWeather>
+
+        <!-- ======================== -->
+        <!--      是否可包扎治疗        -->
+        <!-- ======================== -->
+        <tendable meta:If="IsTendable">true</tendable>
+        <tendable meta:Unless="IsTendable">false</tendable>
+
+        <!-- ======================== -->
+        <!--       通用组件机制         -->
+        <!-- ======================== -->
+        <comps>
+            <!-- 随时间消失（常用于疾病或轻伤） -->
+            <li Class="HediffCompProperties_Disappears" meta:If="IsDisease|IsInjury">
+                <disappearsAfterTicks>60000</disappearsAfterTicks>
+            </li>
+
+            <!-- 成瘾进展组件 -->
+            <li Class="HediffCompProperties_SeverityPerDay" meta:If="IsAddiction">
+                <severityPerDay>-0.05</severityPerDay>
+            </li>
+        </comps>
+
+        <!-- 一次性治愈：常用于成瘾药物或伤口修复品 -->
+        <cureAllAtOnceIfCuredByItem meta:If="IsAddiction|IsInjury">true</cureAllAtOnceIfCuredByItem>
+
+        <!-- ======================== -->
+        <!--       外观/战斗日志         -->
+        <!-- ======================== -->
+
+        <overheadIcon meta:If="IsDisease">Diseased</overheadIcon>
+        <combatLogVisible>true</combatLogVisible>
+
+    </HediffDef>
+
+</Defs>

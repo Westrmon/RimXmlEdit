@@ -1,0 +1,99 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs xmlns:meta="RimXmlEdit.Template"
+    meta:defType="ResearchProjectDef">
+
+    <!-- ======================== -->
+    <!--       可用过滤器定义       -->
+    <!-- ======================== -->
+    <meta:FilterDefs>
+        <meta:Filter Name="IsBasicResearch" Desc="是否为基础研究项目（低科技等级）" />
+        <meta:Filter Name="IsAdvancedResearch" Desc="是否为高级研究项目（高科技等级）" />
+        <meta:Filter Name="RequiresTechprint" Desc="此研究是否需要科技蓝图" />
+        <meta:Filter Name="UnlocksBuildings" Desc="是否解锁新的建筑" />
+        <meta:Filter Name="UnlocksRecipes" Desc="是否解锁新的制作配方" />
+    </meta:FilterDefs>
+
+    <!-- ======================== -->
+    <!--       研究项目模板        -->
+    <!-- ======================== -->
+    <ResearchProjectDef meta:Name="CustomResearchTemplate"
+        meta:Desc="一个可根据过滤器自动匹配的研究项目模板"
+        ParentName="ResearchProjectBase">
+
+        <!-- 基本信息 -->
+        <defName>MyCustomResearch</defName>
+        <label>Custom Research</label>
+        <description>这是一个示例研究描述。</description>
+
+        <!-- 基础研究点消耗 -->
+        <baseCost meta:If="IsBasicResearch">300</baseCost>
+        <baseCost meta:If="IsAdvancedResearch">2000</baseCost>
+        <baseCost meta:Unless="IsBasicResearch|IsAdvancedResearch">1000</baseCost>
+
+        <!-- 科技等级 -->
+        <techLevel meta:If="IsBasicResearch">Neolithic</techLevel>
+        <techLevel meta:If="IsAdvancedResearch">Spacer</techLevel>
+        <techLevel meta:Unless="IsBasicResearch|IsAdvancedResearch">Industrial</techLevel>
+
+        <!-- 研究所属标签 -->
+        <tab>Main</tab>
+
+        <!-- ======================== -->
+        <!--        研究依赖           -->
+        <!-- ======================== -->
+        <prerequisites>
+            <li meta:If="IsAdvancedResearch">MicroelectronicsBasics</li>
+            <li meta:Unless="IsAdvancedResearch">ComplexFurniture</li>
+        </prerequisites>
+
+        <requiredResearchBuilding meta:If="IsAdvancedResearch">
+            HiTechResearchBench
+        </requiredResearchBuilding>
+
+        <requiredResearchFacilities meta:If="IsAdvancedResearch">
+            <li>MultiAnalyzer</li>
+        </requiredResearchFacilities>
+
+        <requiredResearchFacilitiesCount meta:If="IsAdvancedResearch">1</requiredResearchFacilitiesCount>
+
+        <!-- ======================== -->
+        <!--        解锁内容           -->
+        <!-- ======================== -->
+
+        <!-- 解锁建筑 -->
+        <unlockedDefs meta:If="UnlocksBuildings">
+            <li>HydroponicsBasin</li>
+            <li>VitalsMonitor</li>
+        </unlockedDefs>
+
+        <!-- 解锁配方 -->
+        <unlockedRecipeDefs meta:If="UnlocksRecipes">
+            <li>Make_ComponentIndustrial</li>
+        </unlockedRecipeDefs>
+
+        <!-- 解锁地形（示例） -->
+        <unlockedTerrainDefs>
+            <li meta:If="UnlocksBuildings">SterileTile</li>
+        </unlockedTerrainDefs>
+
+        <!-- 一些模组使用 unlockedBuildings，保持兼容 -->
+        <unlockedBuildings meta:If="UnlocksBuildings">
+            <li>ElectricCrematorium</li>
+        </unlockedBuildings>
+
+        <!-- ======================== -->
+        <!--       研究树位置          -->
+        <!-- ======================== -->
+        <researchViewX>5</researchViewX>
+        <researchViewY>3</researchViewY>
+
+        <!-- 科技蓝图 -->
+        <techprintCount meta:If="RequiresTechprint">2</techprintCount>
+
+        <!-- 派系持有科技蓝图 -->
+        <heldByFactionCategoryTags meta:If="RequiresTechprint">
+            <li>SpacerTech</li>
+        </heldByFactionCategoryTags>
+
+    </ResearchProjectDef>
+</Defs>

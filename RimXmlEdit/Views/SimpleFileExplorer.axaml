@@ -1,115 +1,134 @@
 <UserControl xmlns="https://github.com/avaloniaui"
-			 xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
-			 xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
-			 xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
-			 xmlns:dialogHost="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
-			 xmlns:vm="using:RimXmlEdit.ViewModels"
-			 xmlns:views="using:RimXmlEdit.Views"
-			 xmlns:cov="using:RimXmlEdit.Converter"
-			 mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
-			 x:Class="RimXmlEdit.SimpleFileExplorer"
-			 x:DataType="vm:SimpleFileExplorerViewModel">
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vm="using:RimXmlEdit.ViewModels"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             x:Class="RimXmlEdit.SimpleFileExplorer"
+             x:DataType="vm:SimpleFileExplorerViewModel">
 
-	<UserControl.Styles>
-		<Style Selector="ToggleButton PathIcon.search-folder">
-			<Setter Property="IsVisible" Value="False"/>
-		</Style>
-		<Style Selector="ToggleButton:checked PathIcon.search-folder">
-			<Setter Property="IsVisible" Value="True"/>
-		</Style>
-		<Style Selector="ToggleButton PathIcon.search-document">
-			<Setter Property="IsVisible" Value="True"/>
-		</Style>
-		<Style Selector="ToggleButton:checked PathIcon.search-document">
-			<Setter Property="IsVisible" Value="False"/>
-		</Style>
-	</UserControl.Styles>
+    <UserControl.Styles>
+        <Style Selector="ToggleButton PathIcon.search-folder">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+        <Style Selector="ToggleButton:checked PathIcon.search-folder">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+        <Style Selector="ToggleButton PathIcon.search-document">
+            <Setter Property="IsVisible" Value="True" />
+        </Style>
+        <Style Selector="ToggleButton:checked PathIcon.search-document">
+            <Setter Property="IsVisible" Value="False" />
+        </Style>
+    </UserControl.Styles>
 
-	<Grid RowDefinitions="Auto, *">
-		<!-- Toolbar -->
-		<Border Grid.Row="0" BorderBrush="Gray" BorderThickness="0,0,0,1" Padding="5,0,5,0">
-			<Grid ColumnDefinitions="Auto * Auto Auto Auto" Grid.ColumnSpacing="2">
-				<Button Content="^" Padding="0,4,0,0" Grid.Column="0"
-						Command="{Binding GoUpCommand}"
-						Height="20" Width="20"/>
-				<TextBox x:Name="PathTextBox" Padding="4,0,0,0"
-						 MinHeight="0" Grid.Column="1" MinWidth="0"
-						 Text="{Binding SearchText, Mode=TwoWay}"
-						 Watermark="Search..." Height="20"
-						 VerticalContentAlignment="Center">
-					<TextBox.KeyBindings>
-						<KeyBinding Gesture="Enter"
-									Command="{Binding SearchCommand}"
-									CommandParameter="{Binding #PathTextBox.Text}"/>
-					</TextBox.KeyBindings>
-				</TextBox>
-				<ToggleButton Grid.Column="2" Margin="0"
-							  IsChecked="{Binding !IsSearchText}" Height="20" Width="20">
-					<Panel>
-						<PathIcon Classes="search-folder" Height="15"
-								  Data="{StaticResource folder_open_vertical_regular}" />
-						<PathIcon Classes="search-document" Height="15"
-								  Data="{StaticResource document_arrow_left_regular}" />
-					</Panel>
-				</ToggleButton>
+    <Grid RowDefinitions="Auto, *">
+        <!-- Toolbar -->
+        <Border Grid.Row="0" BorderBrush="Gray" BorderThickness="0,0,0,1" Padding="5,0,5,0">
+            <Grid ColumnDefinitions="Auto * Auto Auto Auto" Grid.ColumnSpacing="2">
+                <Button Content="^" Padding="0,4,0,0" Grid.Column="0"
+                        Command="{Binding GoUpCommand}"
+                        Height="20" Width="20" />
+                <TextBox x:Name="PathTextBox" Padding="4,0,0,0"
+                         MinHeight="0" Grid.Column="1" MinWidth="0"
+                         Text="{Binding SearchText, Mode=TwoWay}"
+                         Watermark="Search..." Height="20"
+                         VerticalContentAlignment="Center">
+                    <TextBox.KeyBindings>
+                        <KeyBinding Gesture="Enter"
+                                    Command="{Binding SearchCommand}"
+                                    CommandParameter="{Binding #PathTextBox.Text}" />
+                    </TextBox.KeyBindings>
+                </TextBox>
+                <ToggleButton Grid.Column="2" Margin="0"
+                              IsChecked="{Binding !IsSearchText}" Height="20" Width="20">
+                    <Panel>
+                        <PathIcon Classes="search-folder" Height="15"
+                                  Data="{StaticResource folder_open_vertical_regular}" />
+                        <PathIcon Classes="search-document" Height="15"
+                                  Data="{StaticResource document_arrow_left_regular}" />
+                    </Panel>
+                </ToggleButton>
 
-				<Button Content="+" Padding="0" Grid.Column="4"
-						Command="{Binding CreateCommand}" Height="20" Width="20">
-					<Button.CommandParameter>
-						<vm:GetTextViewModel />
-					</Button.CommandParameter>
-				</Button>
-			</Grid>
-		</Border>
+                <!-- <Button Content="+" Padding="0" Grid.Column="4" -->
+                <!-- 		Command="{Binding CreateCommand}" Height="20" Width="20"> -->
+                <!-- 	<Button.CommandParameter> -->
+                <!-- 		<vm:GetTextViewModel /> -->
+                <!-- 	</Button.CommandParameter> -->
+                <!-- </Button> -->
+                <Button Content="+" Padding="0" Grid.Column="4" Height="20" Width="20">
+                    <Button.Flyout>
+                        <MenuFlyout>
+                            <MenuItem Header="File" Command="{Binding CreateCommand}"
+                                      CommandParameter="file" />
+                            <MenuItem Header="-" />
+                            <MenuItem Header="Folder"
+                                      Command="{Binding CreateCommand}"
+                                      CommandParameter="folder" />
+                        </MenuFlyout>
+                    </Button.Flyout>
+                </Button>
+            </Grid>
+        </Border>
 
-		<!-- Content Area -->
-		<Grid Grid.Row="1">
-			<ListBox ItemsSource="{Binding Items}"
-					 SelectionMode="Multiple"
-					 x:Name="FileListBox"
-					 DoubleTapped="FileListBox_DoubleTapped">
-				<ListBox.Styles>
-					<Style Selector="ListBoxItem">
-						<Setter Property="MinHeight" Value="0"/>
-						<Setter Property="HorizontalContentAlignment" Value="Stretch"/>
-						<Setter Property="Padding" Value="9,4,0,9"/>
-					</Style>
-				</ListBox.Styles>
+        <!-- Content Area -->
+        <Grid Grid.Row="1">
+            <ListBox ItemsSource="{Binding Items}"
+                     SelectionMode="Multiple"
+                     x:Name="FileListBox"
+                     DoubleTapped="FileListBox_DoubleTapped">
+                <ListBox.Styles>
+                    <Style Selector="ListBoxItem">
+                        <Setter Property="MinHeight" Value="0" />
+                        <Setter Property="HorizontalContentAlignment" Value="Stretch" />
+                        <Setter Property="Padding" Value="9,4,0,9" />
+                    </Style>
+                </ListBox.Styles>
 
-				<ListBox.ItemsPanel>
-					<ItemsPanelTemplate>
-						<VirtualizingStackPanel ScrollViewer.AllowAutoHide="False"/>
-					</ItemsPanelTemplate>
-				</ListBox.ItemsPanel>
+                <ListBox.ItemsPanel>
+                    <ItemsPanelTemplate>
+                        <VirtualizingStackPanel ScrollViewer.AllowAutoHide="False" />
+                    </ItemsPanelTemplate>
+                </ListBox.ItemsPanel>
 
-				<ListBox.ItemTemplate>
-					<DataTemplate x:DataType="vm:FileSystemItemViewModel">
-						<Grid ColumnDefinitions="Auto *" Margin="2" MinHeight="10">
-							<Grid.ContextMenu>
-								<ContextMenu>
-									<MenuItem Header="Open" Command="{Binding $parent[ListBox].DataContext.OpenCommand}" CommandParameter="{Binding}"/>
-									<MenuItem Header="Copy" Command="{Binding $parent[ListBox].DataContext.CopyCommand}" CommandParameter="{Binding $parent[ListBox].SelectedItems}"/>
-									<MenuItem Header="Cut" Command="{Binding $parent[ListBox].DataContext.CutCommand}" CommandParameter="{Binding $parent[ListBox].SelectedItems}"/>
-									<MenuItem Header="Paste" Command="{Binding $parent[ListBox].DataContext.PasteCommand}"/>
-									<Separator/>
-									<MenuItem Header="Delete" Command="{Binding $parent[ListBox].DataContext.DeleteCommand}" CommandParameter="{Binding $parent[ListBox].SelectedItem}"/>
-									<MenuItem Header="Rename" IsEnabled="False" Command="{Binding $parent[ListBox].DataContext.RenameCommand}"/>
-								</ContextMenu>
-							</Grid.ContextMenu>
+                <ListBox.ItemTemplate>
+                    <DataTemplate x:DataType="vm:FileSystemItemViewModel">
+                        <Grid ColumnDefinitions="Auto *" Margin="2" MinHeight="10">
+                            <Grid.ContextMenu>
+                                <ContextMenu>
+                                    <MenuItem Header="Open"
+                                              Command="{Binding $parent[ListBox].DataContext.OpenCommand}"
+                                              CommandParameter="{Binding}" />
+                                    <MenuItem Header="Copy"
+                                              Command="{Binding $parent[ListBox].DataContext.CopyCommand}"
+                                              CommandParameter="{Binding $parent[ListBox].SelectedItems}" />
+                                    <MenuItem Header="Cut" Command="{Binding $parent[ListBox].DataContext.CutCommand}"
+                                              CommandParameter="{Binding $parent[ListBox].SelectedItems}" />
+                                    <MenuItem Header="Paste"
+                                              Command="{Binding $parent[ListBox].DataContext.PasteCommand}" />
+                                    <Separator />
+                                    <MenuItem Header="Delete"
+                                              Command="{Binding $parent[ListBox].DataContext.DeleteCommand}"
+                                              CommandParameter="{Binding $parent[ListBox].SelectedItem}" />
+                                    <MenuItem Header="Rename" IsEnabled="False"
+                                              Command="{Binding $parent[ListBox].DataContext.RenameCommand}" />
+                                </ContextMenu>
+                            </Grid.ContextMenu>
 
-							<Image Grid.Column="0" Source="{Binding Icon}" Width="20" Height="20" Margin="0,0,10,0" VerticalAlignment="Center"/>
-							<TextBlock Grid.Column="1" TextWrapping="NoWrap"
-									   Text="{Binding Name}"
-									   VerticalAlignment="Center"/>
-						</Grid>
-					</DataTemplate>
-				</ListBox.ItemTemplate>
-			</ListBox>
+                            <Image Grid.Column="0" Source="{Binding Icon}" Width="20" Height="20" Margin="0,0,10,0"
+                                   VerticalAlignment="Center" />
+                            <TextBlock Grid.Column="1" TextWrapping="NoWrap"
+                                       Text="{Binding Name}"
+                                       VerticalAlignment="Center" />
+                        </Grid>
+                    </DataTemplate>
+                </ListBox.ItemTemplate>
+            </ListBox>
 
-			<Panel IsVisible="{Binding IsLoading}" Background="#80FFFFFF">
-				<ProgressBar IsIndeterminate="True" MinWidth="50"
-							 Margin="10,0,10,0"/>
-			</Panel>
-		</Grid>
-	</Grid>
+            <Panel IsVisible="{Binding IsLoading}" Background="#80FFFFFF">
+                <ProgressBar IsIndeterminate="True" MinWidth="50"
+                             Margin="10,0,10,0" />
+            </Panel>
+        </Grid>
+    </Grid>
 </UserControl>

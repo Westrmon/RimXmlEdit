@@ -1,0 +1,219 @@
+﻿<UserControl xmlns="https://github.com/avaloniaui"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             x:Name="TemplateXml"
+             xmlns:vm="using:RimXmlEdit.ViewModels"
+             xmlns:dialogHost="clr-namespace:DialogHostAvalonia;assembly=DialogHost.Avalonia"
+             xmlns:converter="clr-namespace:RimXmlEdit.Converter"
+             x:DataType="vm:TemplateXmlViewModel"
+             mc:Ignorable="d" d:DesignWidth="800" d:DesignHeight="450"
+             Width="650" Height="450"
+             x:Class="RimXmlEdit.Views.DialogViews.TemplateXmlView">
+
+    <UserControl.Styles>
+        <Style Selector="TextBlock.Header">
+            <Setter Property="FontSize" Value="14" />
+            <Setter Property="FontWeight" Value="SemiBold" />
+            <Setter Property="Margin" Value="0,15,0,8" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+        </Style>
+
+        <!-- 输入框样式 -->
+        <Style Selector="TextBox">
+            <Setter Property="Background" Value="{DynamicResource ControlBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="CaretBrush" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="Padding" Value="8" />
+            <Setter Property="CornerRadius" Value="2" />
+        </Style>
+
+        <!-- 下拉框样式 -->
+        <Style Selector="ComboBox">
+            <Setter Property="Background" Value="{DynamicResource ControlBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="Foreground" Value="{DynamicResource TextPrimaryBrush}" />
+            <Setter Property="HorizontalAlignment" Value="Stretch" />
+            <Setter Property="CornerRadius" Value="2" />
+        </Style>
+
+        <!-- 列表项基础样式 -->
+        <Style Selector="ListBoxItem">
+            <Setter Property="Padding" Value="0" />
+            <Setter Property="Margin" Value="0,0,8,8" />
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <!-- 移除 ListBoxItem 默认的鼠标悬停/选中背景，由内部 Border 处理 -->
+        <Style Selector="ListBoxItem:pointerover /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="ListBoxItem:selected /template/ ContentPresenter">
+            <Setter Property="Background" Value="Transparent" />
+        </Style>
+        <Style Selector="ListBoxItem Border.Card">
+            <Setter Property="Background" Value="{DynamicResource ControlBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="CornerRadius" Value="3"/>
+            <!-- 添加简单的过渡动画，使交互更平滑 -->
+            <Setter Property="Transitions">
+                <Transitions>
+                    <BrushTransition Property="Background" Duration="0:0:0.1"/>
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.1"/>
+                </Transitions>
+            </Setter>
+        </Style>
+
+        <!-- 悬停状态 (PointerOver): 稍微变亮 -->
+        <Style Selector="ListBoxItem:pointerover Border.Card">
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource TextSecondaryBrush}"/>
+        </Style>
+
+        <!-- 选中状态 (Selected): 变为深蓝色背景 + 亮蓝色边框 -->
+        <Style Selector="ListBoxItem:selected Border.Card">
+            <Setter Property="Background" Value="{DynamicResource SelectionBackgroundBrush}"/>
+            <Setter Property="BorderBrush" Value="{DynamicResource FocusBorderBrush}"/>
+        </Style>
+        
+        <!-- 选中状态下的文本颜色调整 (可选，为了增加对比度) -->
+        <Style Selector="ListBoxItem:selected TextBlock">
+            <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
+        </Style>
+    </UserControl.Styles>
+
+    <Grid RowDefinitions="Auto, *, Auto" Margin="24"
+          Background="{DynamicResource AppBackgroundBrush}">
+
+        <!-- 标题 -->
+        <TextBlock Text="新建 XML 模板导向"
+                   FontSize="22"
+                   FontWeight="Light"
+                   Foreground="{DynamicResource TextPrimaryBrush}"
+                   Margin="0,0,0,25"
+                   Grid.Row="0" />
+
+        <!-- 内容区域 -->
+        <ScrollViewer Grid.Row="1" Padding="0,0,15,0">
+            <StackPanel>
+
+                <!-- 1. 文件名称 -->
+                <TextBlock Text="文件名称 (File Name)" Classes="Header" />
+                <TextBox Text="{Binding FilePath, Mode=TwoWay}"
+                         Watermark="请输入文件名 (无需后缀)..." />
+
+                <!-- 2. 一级分类 -->
+                <TextBlock Text="主要分类 (Primary Category)" Classes="Header" />
+                <ComboBox ItemsSource="{Binding Categories}"
+                          SelectedItem="{Binding SelectedPrimaryCategory}">
+                    <ComboBox.ItemTemplate>
+                        <DataTemplate>
+                            <TextBlock Text="{Binding Name}" Padding="5" />
+                        </DataTemplate>
+                    </ComboBox.ItemTemplate>
+                </ComboBox>
+
+                <!-- 3. 二级分类 (卡片式选择) -->
+                <TextBlock Text="子类型选择 (Sub-Category)" Classes="Header"
+                           IsVisible="{Binding IsVisible}" />
+                <!-- 容器背景使用 FloatingBackgroundBrush 稍微提亮 -->
+                <Border Background="{DynamicResource FloatingBackgroundBrush}"
+                        BorderBrush="{DynamicResource BorderBrush}"
+                        BorderThickness="1"
+                        Padding="12"
+                        CornerRadius="4"
+                        IsVisible="{Binding IsVisible}">
+                    <ListBox ItemsSource="{Binding SecondaryCategories}"
+                             SelectedItem="{Binding SelectedSecondaryCategory}"
+                             Background="Transparent"
+                             BorderThickness="0">
+                        <ListBox.ItemsPanel>
+                            <ItemsPanelTemplate>
+                                <WrapPanel Orientation="Horizontal" />
+                            </ItemsPanelTemplate>
+                        </ListBox.ItemsPanel>
+                        <ListBox.ItemTemplate>
+                            <DataTemplate>
+                                <!-- 单个卡片样式 -->
+                                <Border Classes="Card"
+                                        CornerRadius="3"
+                                        Width="240" Height="65"
+                                        Padding="12"
+                                        Margin="0,0,0,0">
+                                    <StackPanel VerticalAlignment="Center">
+                                        <TextBlock Text="{Binding Name}"
+                                                   FontWeight="Bold"
+                                                   TextTrimming="CharacterEllipsis" />
+                                        <TextBlock Text="{Binding Code}"
+                                                   TextWrapping="Wrap"
+                                                   FontSize="11"
+                                                   Margin="0,2,0,0" />
+                                    </StackPanel>
+                                </Border>
+                            </DataTemplate>
+                        </ListBox.ItemTemplate>
+                    </ListBox>
+                </Border>
+
+                <!-- 4. 附加配置选项 -->
+                <TextBlock Text="详细配置 (Configuration Options)" Classes="Header"
+                           IsVisible="{Binding IsVisible}" />
+                <ItemsControl ItemsSource="{Binding Options}"
+                              IsVisible="{Binding IsVisible}">
+                    <ItemsControl.ItemTemplate>
+                        <DataTemplate>
+                            <Border Background="{DynamicResource FloatingBackgroundBrush}"
+                                    Margin="0,0,0,8"
+                                    Padding="10"
+                                    CornerRadius="3"
+                                    BorderBrush="{DynamicResource BorderBrush}"
+                                    BorderThickness="1">
+                                <Grid ColumnDefinitions="30, *">
+                                    <CheckBox IsChecked="{Binding IsSelected}"
+                                              VerticalAlignment="Top"
+                                              Margin="0,2,0,0" />
+                                    <StackPanel Grid.Column="1">
+                                        <TextBlock Text="{Binding Title}"
+                                                   FontWeight="Bold"
+                                                   Foreground="{DynamicResource TextPrimaryBrush}" />
+                                        <TextBlock Text="{Binding Description}"
+                                                   FontSize="12"
+                                                   Foreground="{DynamicResource TextSecondaryBrush}"
+                                                   TextWrapping="Wrap"
+                                                   Margin="0,4,0,0" />
+                                    </StackPanel>
+                                </Grid>
+                            </Border>
+                        </DataTemplate>
+                    </ItemsControl.ItemTemplate>
+                </ItemsControl>
+
+            </StackPanel>
+        </ScrollViewer>
+
+        <!-- 底部按钮区域 -->
+        <StackPanel Grid.Row="2" Orientation="Horizontal" HorizontalAlignment="Right" Spacing="12" Margin="0">
+            <!-- 取消按钮: 透明背景，带边框 -->
+            <Button Content="取消"
+                    Command="{Binding $parent[dialogHost:DialogHost].CloseDialogCommand}"
+                    Background="Transparent"
+                    BorderBrush="{DynamicResource BorderBrush}"
+                    BorderThickness="1"
+                    Foreground="{DynamicResource TextPrimaryBrush}"
+                    Padding="24,8"
+                    CornerRadius="3" />
+
+            <!-- 创建按钮: 使用强调色 Accent -->
+            <Button Content="创建文件"
+                    IsEnabled="{Binding FilePath, Converter={x:Static converter:StringHasValueToBoolConverter.Instance}}"
+                    Command="{Binding $parent[dialogHost:DialogHost].CloseDialogCommand}"
+                    CommandParameter="{Binding FilePath }"
+                    Background="{DynamicResource AccentBrush}"
+                    Foreground="{DynamicResource TextOnAccentBrush}"
+                    BorderThickness="0"
+                    Padding="24,8"
+                    CornerRadius="3" />
+        </StackPanel>
+    </Grid>
+</UserControl>
