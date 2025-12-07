@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs xmlns:meta="RimXmlEdit.Template"
+      meta:defType="ThingDef">
+
+    <!-- ==========================================
+         过滤器定义：基于生物学特征和用途
+         ========================================== -->
+    <meta:FilterDefs>
+        <!-- 体型维度 (不选默认中型，如猪/羊/狼) -->
+        <meta:Filter Name="IsLarge" Desc="[体型] 大型动物 (牛/熊/象/驼鹿，高血量/高伤害)"/>
+        <meta:Filter Name="IsSmall" Desc="[体型] 小型动物 (鸡/猫/仓鼠，难命中/食量小)"/>
+
+        <!-- 行为维度 -->
+        <meta:Filter Name="IsPredator" Desc="[食性] 掠食者 (狼/熊/猫，吃肉/狩猎行为)"/>
+        <meta:Filter Name="IsPet" Desc="[社交] 宠物特性 (低野性/频繁蹭人/容易建立羁绊)"/>
+        <meta:Filter Name="CanHaul" Desc="[智商] 高级智商/可搬运 (狗/象/猪，可训练搬运和救援)"/>
+        <meta:Filter Name="IsPackAnimal" Desc="[功能] 驮运动物 (马/象/羊驼，远征队载重)"/>
+
+        <!-- 农场产出维度 -->
+        <meta:Filter Name="ProducesMilk" Desc="[产出] 产奶 (牛/羊/骆驼)"/>
+        <meta:Filter Name="ProducesWool" Desc="[产出] 剪毛 (羊/羊驼)"/>
+        <meta:Filter Name="LaysEggs" Desc="[产出] 下蛋 (鸡/鸭/爬行动物)"/>
+
+        <meta:Filter Name="SellsToPlayer" Desc="[交易] 可交易 (鸡/鸭/爬行动物)"/>
+    </meta:FilterDefs>
+
+    <!-- ==========================================
+         万能动物模版
+         ========================================== -->
+    <ThingDef meta:Name="UniversalAnimalTemplate"
+              meta:Desc="通用动物生成器"
+              ParentName="AnimalThingBase">
+
+        <defName>Generated_Animal
+            <meta:If meta:Cond="IsPredator">_Predator</meta:If>
+            <meta:If
+                    meta:Cond="ProducesMilk">_FarmBeast
+            </meta:If>
+            <meta:If meta:Cond="IsPet">_Pet</meta:If>
+        </defName>
+
+        <label>
+            <meta:If meta:Cond="IsPredator">wild beast</meta:If>
+            <meta:If meta:Cond="ProducesMilk">farm animal</meta:If>
+            <meta:If meta:Cond="IsPet">house pet</meta:If>
+            <meta:Unless meta:Cond="IsPredator">
+                <meta:Unless meta:Cond="IsPet">wild herbivore</meta:Unless>
+            </meta:Unless>
+        </label>
+
+        <description>A generated creature tailored for specific environments.</description>
+
+        <!-- 声音与图像占位符 -->
+        <soundImpactDefault>BulletImpact_Flesh</soundImpactDefault>
+        <graphicData>
+            <!-- 仅作示例路径 -->
+            <texPath meta:If="IsPredator">Things/Pawn/Animal/Wolf_Timber/Wolf_Timber</texPath>
+            <texPath meta:If="ProducesMilk">Things/Pawn/Animal/Cow/Cow</texPath>
+            <texPath meta:If="LaysEggs">Things/Pawn/Animal/Chicken/Chicken</texPath>
+            <texPath meta:Unless="IsPredator">Things/Pawn/Animal/Muffalo/Muffalo</texPath>
+            <drawSize>
+                <meta:If meta:Cond="IsLarge">2.0</meta:If>
+                <meta:If meta:Cond="IsSmall">0.8</meta:If>
+                <meta:Unless meta:Cond="IsLarge">1.2</meta:Unless>
+            </drawSize>
+        </graphicData>
+
+        <!-- 统计数据 -->
+        <statBases>
+            <!-- 移动速度: 掠食者和马跑得快 -->
+            <MoveSpeed meta:If="IsPredator">5.5</MoveSpeed>
+            <MoveSpeed meta:If="IsPackAnimal">5.2</MoveSpeed>
+            <MoveSpeed meta:Unless="IsPredator">
+                <meta:Unless meta:Cond="IsPackAnimal">3.5</meta:Unless>
+            </MoveSpeed>
+
+            <!-- 市场价值 -->
+            <MarketValue>
+                <meta:If meta:Cond="IsLarge">500</meta:If>
+                <meta:If meta:Cond="IsSmall">100</meta:If>
+                <meta:Unless meta:Cond="IsLarge">
+                    <meta:Unless meta:Cond="IsSmall">300</meta:Unless>
+                </meta:Unless>
+            </MarketValue>
+
+            <!-- 产肉量/皮量系数 -->
+            <MeatAmount>
+                <meta:If meta:Cond="IsLarge">100</meta:If>
+                <meta:If meta:Cond="ProducesMilk">80</meta:If> <!-- 农场动物肉多 -->
+                <meta:Unless meta:Cond="IsLarge">40</meta:Unless>
+            </MeatAmount>
+
+            <!-- 舒适温度：产毛动物耐寒 -->
+            <ComfyTemperatureMin meta:If="ProducesWool">-40</ComfyTemperatureMin>
+            <ComfyTemperatureMin meta:Unless="ProducesWool">-10</ComfyTemperatureMin>
+        </statBases>
+
+        <!-- 种族属性 -->
+        <race>
+            <!-- 智商/训练 -->
+            <trainability meta:If="CanHaul">Advanced</trainability>
+            <trainability meta:Unless="CanHaul">
+                <meta:If meta:Cond="IsPackAnimal">Intermediate</meta:If>
+                <meta:Unless meta:Cond="IsPackAnimal">Simple</meta:Unless>
+            </trainability>
+
+            <!-- 体型 -->
+            <baseBodySize meta:If="IsLarge">2.0</baseBodySize>
+            <baseBodySize meta:If="IsSmall">0.35</baseBodySize>
+            <baseBodySize meta:Unless="IsLarge|IsSmall">0.9</baseBodySize>
+
+            <!-- 野性：宠物极低，农场低，掠食者高 -->
+            <wildness meta:If="IsPet">0.1</wildness>
+            <wildness meta:If="ProducesMilk">0.2</wildness> <!-- 农场动物 -->
+            <wildness meta:If="IsPredator">0.85</wildness>  <!-- 狼/熊 -->
+            <wildness meta:Unless="IsPet|ProducesMilk|IsPredator">0.75</wildness>
+
+            <!-- 蹭人间隔 (宠物专属) -->
+            <nuzzleMtbHours meta:If="IsPet">12</nuzzleMtbHours>
+            <nuzzleMtbHours meta:Unless="IsPet">120</nuzzleMtbHours>
+
+            <!-- 猎人/被猎 -->
+            <predator meta:If="IsPredator">true</predator>
+            <manhunterOnDamageChance meta:If="IsPredator">1.0</manhunterOnDamageChance>
+            <manhunterOnDamageChance meta:Unless="IsPredator">0.1</manhunterOnDamageChance>
+
+            <!-- 食谱 -->
+            <foodType meta:If="IsPredator">CarnivoreAnimal</foodType>
+            <foodType meta:If="ProducesMilk">VegetarianRoughAnimal</foodType> <!-- 吃草 -->
+            <foodType meta:If="IsPet">OmnivoreAnimal</foodType> <!-- 狗/猫杂食 -->
+
+            <!-- 寿命 -->
+            <lifeExpectancy meta:If="IsLarge">40</lifeExpectancy>
+            <lifeExpectancy meta:If="IsSmall">10</lifeExpectancy>
+            <lifeExpectancy meta:Unless="IsLarge">15</lifeExpectancy>
+
+            <!-- 驮运能力 -->
+            <packAnimal meta:If="IsPackAnimal">true</packAnimal>
+        </race>
+
+        <!-- 农场产出组件 -->
+        <comps>
+            <li Class="CompProperties_Milkable" meta:If="ProducesMilk">
+                <milkDef>Milk</milkDef>
+                <milkIntervalDays>1</milkIntervalDays>
+                <milkAmount>15</milkAmount>
+            </li>
+
+            <li Class="CompProperties_Shearable" meta:If="ProducesWool">
+                <woolDef>WoolSheep</woolDef>
+                <shearIntervalDays>10</shearIntervalDays>
+                <woolAmount>45</woolAmount>
+            </li>
+
+            <li Class="CompProperties_EggLayer" meta:If="LaysEggs">
+                <eggUnfertilizedDef>EggChickenUnfertilized</eggUnfertilizedDef>
+                <eggFertilizedDef>EggChickenFertilized</eggFertilizedDef>
+                <eggLayIntervalDays>1.5</eggLayIntervalDays>
+            </li>
+        </comps>
+
+        <!-- 攻击方式 -->
+        <tools>
+            <!-- 掠食者攻击 -->
+            <li meta:If="IsPredator">
+                <label>bite</label>
+                <capacities>
+                    <li>Bite</li>
+                </capacities>
+                <power meta:If="IsLarge">18</power>
+                <power meta:Unless="IsLarge">10</power>
+                <cooldownTime>2.0</cooldownTime>
+                <surpriseAttack>
+                    <extraMeleeDamages>
+                        <li>
+                            <def>Stun</def>
+                            <amount>14</amount>
+                        </li>
+                    </extraMeleeDamages>
+                </surpriseAttack>
+            </li>
+            <li meta:If="IsPredator">
+                <label>claw</label>
+                <capacities>
+                    <li>Scratch</li>
+                </capacities>
+                <power>10</power>
+                <cooldownTime>1.5</cooldownTime>
+            </li>
+
+            <!-- 草食/农场动物攻击 -->
+            <li meta:Unless="IsPredator">
+                <label meta:If="IsLarge">hoof</label>
+                <label meta:Unless="IsLarge">bite</label>
+                <capacities>
+                    <li meta:If="IsLarge">Blunt</li>
+                    <li meta:Unless="IsLarge">Bite</li>
+                </capacities>
+                <power meta:If="IsLarge">12</power>
+                <power meta:Unless="IsLarge">4</power> <!-- 鸡啄人很轻 -->
+            </li>
+        </tools>
+        <!-- 交易标签 (决定谁卖它) -->
+        <tradeTags meta:If="SellsToPlayer">
+            <li meta:If="ProducesResources">AnimalFarm</li>
+            <li meta:If="IsPet">AnimalPet</li>
+            <li meta:If="IsPredator">AnimalFighter</li>
+            <li meta:If="IsLarge">AnimalExotic</li> <!-- 象/熊通常算珍奇 -->
+        </tradeTags>
+    </ThingDef>
+</Defs>

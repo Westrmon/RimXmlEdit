@@ -10,6 +10,7 @@ namespace RimXmlEdit.Core.NodeDefine;
 
 public class AIDefineGenerator
 {
+    private const int _retryCount = 3;
     private readonly AppSettings _appSettings;
     private readonly ILogger _log;
 
@@ -43,7 +44,7 @@ public class AIDefineGenerator
     public async Task GenerateDescriptionsForDbAsync(
         NodeDefinitionDatabase db,
         List<TypeSchema> schemas,
-        int batchSize = 50)
+        int batchSize)
     {
         var schemaLookup = schemas
             .GroupBy(s => GetShortName(s.FullName))
@@ -65,6 +66,7 @@ public class AIDefineGenerator
 
         _log.LogInformation("Found {Count} nodes waiting for AI descriptions.", pendingNodes.Count);
 
+        var count = 0;
         for (var i = 0; i < pendingNodes.Count; i += batchSize)
         {
             var batch = pendingNodes.Skip(i).Take(batchSize).ToList();
@@ -77,6 +79,11 @@ public class AIDefineGenerator
                 {
                     db.BatchUpdate(results);
                     _log.LogNotify($"Batch saved. Updated {results.Count} nodes.");
+                }
+                else if (++count > _retryCount)
+                {
+                    _log.LogError("The number of retries exceeded {}", _retryCount);
+                    return;
                 }
             }
             catch (Exception ex)
@@ -140,7 +147,7 @@ public class AIDefineGenerator
 
         try
         {
-            var responseString = await _aiAssistant.AskAsync(sb.ToString());
+            var responseString = _aiAssistant.AskAsync(sb.ToString(), false).Result;
             responseString = CleanJsonString(responseString);
             var result = JsonSerializer.Deserialize<Dictionary<string, string>>(responseString, _option);
             return result ?? new Dictionary<string, string>();

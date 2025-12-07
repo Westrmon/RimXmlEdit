@@ -1,87 +1,79 @@
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using RimXmlEdit.Core.Parse;
-using RimXmlEdit.Models;
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using RimXmlEdit.Core.Parse;
+using RimXmlEdit.Models;
 
 namespace RimXmlEdit.ViewModels;
 
 public partial class QuickSearchBoxViewModel : ViewModelBase, IQuickSearch
 {
     private CancellationTokenSource _cancellationTokenSource;
-    private bool _isSelectionChanging = false;
 
-    [ObservableProperty]
-    private Dictionary<string, int> _weights;
-
-    [ObservableProperty]
-    private List<string> _dataSource;
+    [ObservableProperty] private List<string> _dataSource;
 
     /// <summary>
-    /// 用户输入的搜索文本，双向绑定到TextBox
+    ///     过滤后的搜索结果，绑定到ListBox
     /// </summary>
-    [ObservableProperty]
-    private string _searchText = string.Empty;
+    [ObservableProperty] private ObservableCollection<SearchResultItem> _filteredResults;
 
     /// <summary>
-    /// 过滤后的搜索结果，绑定到ListBox
+    ///     控制结果弹窗是否打开
     /// </summary>
-    [ObservableProperty]
-    private ObservableCollection<SearchResultItem> _filteredResults;
+    [ObservableProperty] private bool _isPopupOpen;
+
+    private bool _isSelectionChanging;
 
     /// <summary>
-    /// 在结果列表中当前选中的项
+    ///     用户输入的搜索文本，双向绑定到TextBox
     /// </summary>
-    [ObservableProperty]
-    private SearchResultItem? _selectedItem;
+    [ObservableProperty] private string _searchText = string.Empty;
 
     /// <summary>
-    /// 控制结果弹窗是否打开
+    ///     在结果列表中当前选中的项
     /// </summary>
-    [ObservableProperty]
-    private bool _isPopupOpen;
+    [ObservableProperty] private SearchResultItem? _selectedItem;
 
-    /// <summary>
-    /// 当用户确认选择后触发的事件
-    /// </summary>
-    public event Action<string>? OnItemSelected;
+    [ObservableProperty] private Dictionary<string, int> _weights;
 
     public QuickSearchBoxViewModel(ModParser modParse)
     {
         FilteredResults = [];
         Task.Run(() =>
         {
-            modParse.Parse();
+            modParse.TryParse();
             Weights = modParse.ModReferenceCount;
             DataSource = modParse.ModReferenceCount.Select(kvp => kvp.Key).ToList();
         });
     }
+
+    /// <summary>
+    ///     当用户确认选择后触发的事件
+    /// </summary>
+    public event Action<string>? OnItemSelected;
 
     private void LoadSimpleData()
     {
         _filteredResults = new ObservableCollection<SearchResultItem>();
 
         var items = new List<string>();
-        for (int i = 0; i < 12000; i++)
-        {
-            items.Add($"Item number {i} - Some random text here");
-        }
+        for (var i = 0; i < 12000; i++) items.Add($"Item number {i} - Some random text here");
         items.Add("Apple");
         items.Add("Application");
         items.Add("Avalonia");
         items.Add("Avalonia UI Framework");
 
         var weights = new Dictionary<string, int>
-            {
-                { "Avalonia", 100 },
-                { "Avalonia UI Framework", 90 },
-                { "Apple", 50 }
-            };
+        {
+            { "Avalonia", 100 },
+            { "Avalonia UI Framework", 90 },
+            { "Apple", 50 }
+        };
         Weights = weights;
         DataSource = items;
     }
@@ -153,16 +145,13 @@ public partial class QuickSearchBoxViewModel : ViewModelBase, IQuickSearch
         if (results != null && !token.IsCancellationRequested)
         {
             FilteredResults.Clear();
-            foreach (var item in results)
-            {
-                FilteredResults.Add(item);
-            }
+            foreach (var item in results) FilteredResults.Add(item);
             IsPopupOpen = FilteredResults.Any();
         }
     }
 
     /// <summary>
-    /// 用于处理键盘导航中的回车键
+    ///     用于处理键盘导航中的回车键
     /// </summary>
     [RelayCommand]
     private void ConfirmSelection()

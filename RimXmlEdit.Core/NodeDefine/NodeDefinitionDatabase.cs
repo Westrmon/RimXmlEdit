@@ -5,7 +5,7 @@ namespace RimXmlEdit.Core.NodeDefine;
 [MessagePackObject(AllowPrivate = true)]
 public class NodeDefinitionDatabase
 {
-    [IgnoreMember] private readonly object _lock = new();
+    [IgnoreMember] private readonly Lock _lock = new();
 
     [IgnoreMember] private Dictionary<string, int> _reversePaletteLookup;
 
@@ -28,17 +28,25 @@ public class NodeDefinitionDatabase
 
     public string GetDescription(string nodePath)
     {
-        if (NodeMap.TryGetValue(nodePath, out var index))
-            if (index >= 0 && index < DescriptionPalette.Count)
-                return DescriptionPalette[index];
-        return string.Empty;
+        var index = 0;
+        var result = GetDes(nodePath);
+        if (!string.IsNullOrEmpty(result)) return result;
+
+        if ((index = nodePath.IndexOf('#')) > 0)
+        {
+            var nodes = nodePath[(index + 1)..];
+            return GetDes(nodes);
+        }
+
+        nodePath = nodePath.Split('.').Last();
+        return GetDes(nodePath);
     }
 
     public void SetDescription(string nodePath, string description)
     {
         if (description == null) description = string.Empty;
 
-        lock (_lock)
+        using (_lock.EnterScope())
         {
             if (!_reversePaletteLookup.TryGetValue(description, out var index))
             {
@@ -118,6 +126,7 @@ public class NodeDefinitionDatabase
         try
         {
             using var fs = new FileStream(path, FileMode.Open, FileAccess.Read);
+            fs.Position = 0;
             var db = MessagePackSerializer.Deserialize<NodeDefinitionDatabase>(fs);
             db.RebuildReverseLookup();
             return db;
@@ -148,5 +157,12 @@ public class NodeDefinitionDatabase
                 NodeMap[nodePath] = index;
             }
         }
+    }
+
+    private string GetDes(string key)
+    {
+        if (NodeMap.TryGetValue(key, out var index2))
+            return DescriptionPalette[index2];
+        return string.Empty;
     }
 }

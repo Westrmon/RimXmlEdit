@@ -1,0 +1,182 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs xmlns:meta="RimXmlEdit.Template"
+    meta:defType="PawnKindDef">
+
+    <!-- ==========================================
+         过滤器定义：基于社会属性和功能
+         ========================================== -->
+    <meta:FilterDefs>
+        <meta:Filter Name="IsCombatant" Desc="[职能] 战斗人员 (携带武器/高战斗力/战斗AI)" />
+        <meta:Filter Name="IsTrader" Desc="[职能] 商人 (携带商品/白银/拥有交易标签)" />
+
+        <meta:Filter Name="IsElite" Desc="[阶级] 精英/高阶 (高品质装备/仿生体/极高战斗力)" />
+        <meta:Filter Name="IsSubservient" Desc="[阶级] 从属/低贱 (奴隶/乞丐/低数值/限制装备)" />
+    </meta:FilterDefs>
+
+    <!-- ==========================================
+         万能人类单位模版
+         ========================================== -->
+    <PawnKindDef meta:Name="UniversalHumanTemplate"
+        meta:Desc="通用人类单位生成器"
+        ParentName="BasePlayerPawnKind">
+
+        <!-- 自动生成 defName -->
+        <defName> Generated_Human <meta:If meta:Cond="IsElite">_Elite</meta:If>
+            <meta:If
+                meta:Cond="IsSubservient">_Slave</meta:If>
+            <meta:If meta:Cond="IsCombatant">_Soldier</meta:If>
+            <meta:If
+                meta:Cond="IsTrader">_Merchant</meta:If>
+        </defName>
+
+        <label>
+            <meta:If meta:Cond="IsElite">elite </meta:If>
+            <meta:If meta:Cond="IsSubservient">servant </meta:If>
+            <meta:If meta:Cond="IsTrader">trader</meta:If>
+            <meta:Unless meta:Cond="IsTrader">human</meta:Unless>
+        </label>
+
+        <race>Human</race>
+
+        <!-- 战斗力评分 (决定袭击点数) -->
+        <combatPower>
+            <meta:If meta:Cond="IsSubservient">20</meta:If> <!-- 奴隶很弱 -->
+            <meta:If meta:Cond="IsElite">150</meta:If>      <!-- 精英很强 -->
+
+            <!-- 普通人或士兵 -->
+            <meta:Unless meta:Cond="IsSubservient">
+                <meta:Unless meta:Cond="IsElite">
+                    <meta:If meta:Cond="IsCombatant">80</meta:If>   <!-- 普通士兵 -->
+                    <meta:Unless meta:Cond="IsCombatant">35</meta:Unless> <!-- 普通平民 -->
+                </meta:Unless>
+            </meta:Unless>
+        </combatPower>
+
+        <!-- 默认阵营类型 (仅作为参考，实际由事件决定) -->
+        <defaultFactionType meta:If="IsSubservient">OutlanderCivil</defaultFactionType>
+        <defaultFactionType meta:If="IsCombatant">Pirate</defaultFactionType>
+
+        <!-- 物品品质 -->
+        <itemQuality>
+            <meta:If meta:Cond="IsElite">Good</meta:If>
+            <meta:If meta:Cond="IsSubservient">Poor</meta:If>
+            <meta:Unless meta:Cond="IsElite">
+                <meta:Unless meta:Cond="IsSubservient">Normal</meta:Unless>
+            </meta:Unless>
+        </itemQuality>
+
+        <!-- 是否是个性化/派系领袖 -->
+        <factionLeader meta:If="IsElite">
+            <meta:Unless meta:Cond="IsCombatant">true</meta:Unless>
+        </factionLeader>
+
+        <!-- ==============================
+             服装配置
+             ============================== -->
+        <apparelMoney>
+            <meta:If meta:Cond="IsElite">2000~4000</meta:If>
+            <meta:If meta:Cond="IsSubservient">0~200</meta:If>
+            <meta:Unless meta:Cond="IsElite">
+                <meta:Unless meta:Cond="IsSubservient">500~1000</meta:Unless>
+            </meta:Unless>
+        </apparelMoney>
+
+        <apparelTags>
+            <!-- 基础衣物 -->
+            <li meta:Unless="IsSubservient">IndustrialBasic</li>
+            <li meta:If="IsSubservient">Neolithic</li> <!-- 奴隶穿破烂 -->
+
+            <!-- 战斗人员装备 -->
+            <li meta:If="IsCombatant">IndustrialMilitaryBasic</li>
+            <li meta:If="IsCombatant">
+                <meta:If meta:Cond="IsElite">IndustrialMilitaryAdvanced</meta:If>
+            </li>
+
+            <!-- 精英装备 -->
+            <li meta:If="IsElite">Spacer</li>
+            <li meta:If="IsElite">Royal</li>
+
+            <!-- 特殊逻辑：奴隶可能有束缚带 -->
+            <li meta:If="IsSubservient">Slave</li>
+        </apparelTags>
+
+        <apparelAllowHeadgearChance>
+            <meta:If meta:Cond="IsCombatant">0.9</meta:If>
+            <meta:If meta:Cond="IsSubservient">0.0</meta:If>
+            <meta:Unless meta:Cond="IsCombatant">0.4</meta:Unless>
+        </apparelAllowHeadgearChance>
+
+        <!-- ==============================
+             武器配置
+             ============================== -->
+        <weaponMoney>
+            <meta:If meta:Cond="IsSubservient">0</meta:If> <!-- 奴隶无武器 -->
+            <meta:If meta:Cond="IsElite">1500~3000</meta:If>
+            <meta:Unless meta:Cond="IsSubservient">
+                <meta:If meta:Cond="IsCombatant">500~1200</meta:If> <!-- 士兵 -->
+                <meta:Unless meta:Cond="IsCombatant">100~300</meta:Unless> <!-- 平民防身 -->
+            </meta:Unless>
+        </weaponMoney>
+
+        <weaponTags>
+            <li meta:If="IsSubservient">None</li>
+
+            <li meta:If="IsCombatant">Gun</li>
+            <li meta:If="IsCombatant">Melee</li>
+
+            <!-- 精英武器 -->
+            <li meta:If="IsElite">SpacerGun</li>
+
+            <!-- 平民简单武器 -->
+            <li meta:Unless="IsCombatant">
+                <meta:Unless meta:Cond="IsSubservient">SimpleGun</meta:Unless>
+            </li>
+        </weaponTags>
+
+        <!-- ==============================
+             背包/库存逻辑 (商人/袭击者)
+             ============================== -->
+        <trader>
+            <meta:If meta:Cond="IsTrader">true</meta:If>
+        </trader>
+
+        <!-- 随身携带的物品 -->
+        <techHediffsMoney>
+            <meta:If meta:Cond="IsElite">1000~2000</meta:If>
+            <meta:Unless meta:Cond="IsElite">0~50</meta:Unless>
+        </techHediffsMoney>
+
+        <techHediffsTags meta:If="IsElite">
+            <li>Advanced</li>
+        </techHediffsTags>
+
+        <invNutrition>
+            <meta:If meta:Cond="IsCombatant">2.55</meta:If> <!-- 袭击者带饭 -->
+            <meta:If meta:Cond="IsTrader">5.0</meta:If>    <!-- 商人带更多 -->
+            <meta:Unless meta:Cond="IsCombatant">1.0</meta:Unless>
+        </invNutrition>
+
+        <inventoryOptions meta:If="IsTrader">
+            <skipChance>0.1</skipChance>
+            <subOptionsChooseOne>
+                <li>
+                    <thingDef>Silver</thingDef>
+                    <countRange>500~1500</countRange>
+                </li>
+                <li>
+                    <thingDef>MedicineIndustrial</thingDef>
+                    <countRange>5~15</countRange>
+                </li>
+            </subOptionsChooseOne>
+        </inventoryOptions>
+
+        <!-- 行为与AI -->
+        <isFighter meta:If="IsCombatant">true</isFighter>
+        <isFighter meta:Unless="IsCombatant">false</isFighter>
+
+        <!-- 奴隶特有 -->
+        <forceNormalGearQuality meta:If="IsSubservient">false</forceNormalGearQuality>
+        <chemicalAddictionChance meta:If="IsSubservient">0.15</chemicalAddictionChance>
+
+    </PawnKindDef>
+</Defs>

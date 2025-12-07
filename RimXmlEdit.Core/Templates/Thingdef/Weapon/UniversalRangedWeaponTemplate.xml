@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs xmlns:meta="RimXmlEdit.Template"
+    meta:defType="ThingDef">
+
+    <!-- ==========================================
+         过滤器定义：通过属性组合而非武器名称来定义
+         ========================================== -->
+    <meta:FilterDefs>
+        <!-- 基础属性 -->
+        <meta:Filter Name="IsSpacerTech" Desc="[科技] 太空时代/电荷技术 (高穿透/高造价/科幻音效)" />
+        <meta:Filter Name="IsHeavyWeapon" Desc="[量级] 重型武器 (降低移速/长瞄准/高伤害)" />
+        <meta:Filter Name="IsDisposable" Desc="[机制] 一次性使用 (发射后销毁，通常用于火箭筒)" />
+
+        <!-- 射程配置 (互斥建议：不要同时选短和长) -->
+        <meta:Filter Name="IsShortRange" Desc="[射程] 近距离 (手枪/霰弹/冲锋枪，命中率衰减快)" />
+        <meta:Filter Name="IsLongRange" Desc="[射程] 远距离 (狙击/重炮，近身命中低)" />
+
+        <!-- 火力模式 -->
+        <meta:Filter Name="IsBurstFire" Desc="[模式] 连发模式 (突击步枪/冲锋枪/链式霰弹)" />
+        <meta:Filter Name="IsShotgunSpread" Desc="[弹道] 霰弹散射 (一次射击发出多枚弹丸)" />
+        <meta:Filter Name="IsExplosive" Desc="[弹道] 爆炸弹头 (造成AOE伤害，火箭/榴弹)" />
+    </meta:FilterDefs>
+
+    <!-- ==========================================
+         万能远程武器模版
+         ========================================== -->
+    <ThingDef meta:Name="UniversalRangedWeapon"
+        meta:Desc="通用远程武器生成器"
+        ParentName="BaseHumanMakeableGun">
+
+        <!-- 自动生成 defName -->
+        <defName> Generated_Weapon <meta:If meta:Cond="IsSpacerTech">_Spacer</meta:If>
+            <meta:If
+                meta:Cond="IsExplosive">_Launcher</meta:If>
+            <meta:Unless meta:Cond="IsExplosive">_Gun</meta:Unless>
+        </defName>
+
+        <label>generated weapon</label>
+
+        <!-- 科技等级 -->
+        <techLevel meta:If="IsSpacerTech">Spacer</techLevel>
+        <techLevel meta:Unless="IsSpacerTech">Industrial</techLevel>
+
+        <!-- 贴图路径占位符 -->
+        <graphicData>
+            <texPath>Things/Item/Equipment/WeaponRanged/AssaultRifle</texPath>
+            <graphicClass>Graphic_Single</graphicClass>
+        </graphicData>
+
+        <!-- 基础数值统计 -->
+        <statBases>
+            <!-- 质量：重武很重，一次性较轻，普通适中 -->
+            <Mass meta:If="IsHeavyWeapon">8.0</Mass>
+            <Mass meta:Unless="IsHeavyWeapon">3.5</Mass>
+            <Mass meta:If="IsDisposable">4.0</Mass> <!-- 覆盖前者 -->
+
+            <!-- 冷却时间逻辑 -->
+            <!-- 连发武器冷却通常较短，狙击/重武冷却长 -->
+            <RangedWeapon_Cooldown meta:If="IsBurstFire">1.5</RangedWeapon_Cooldown>
+            <RangedWeapon_Cooldown meta:If="IsLongRange">2.3</RangedWeapon_Cooldown>
+            <RangedWeapon_Cooldown meta:If="IsHeavyWeapon">4.5</RangedWeapon_Cooldown>
+            <!-- 既不连发也不是重武也不是长手（如左轮） -->
+            <RangedWeapon_Cooldown meta:Unless="IsBurstFire">
+                <meta:Unless meta:Cond="IsLongRange">1.6</meta:Unless>
+            </RangedWeapon_Cooldown>
+
+            <!-- 命中率模型 -->
+            <!-- 短程武器：贴脸准，远了瞎 -->
+            <AccuracyTouch meta:If="IsShortRange">0.85</AccuracyTouch>
+            <AccuracyShort meta:If="IsShortRange">0.65</AccuracyShort>
+            <AccuracyMedium meta:If="IsShortRange">0.35</AccuracyMedium>
+            <AccuracyLong meta:If="IsShortRange">0.15</AccuracyLong>
+
+            <!-- 长程武器：贴脸瞎，远了准 -->
+            <AccuracyTouch meta:If="IsLongRange">0.40</AccuracyTouch>
+            <AccuracyShort meta:If="IsLongRange">0.60</AccuracyShort>
+            <AccuracyMedium meta:If="IsLongRange">0.85</AccuracyMedium>
+            <AccuracyLong meta:If="IsLongRange">0.90</AccuracyLong>
+
+            <!-- 默认中程（不短不长） -->
+            <AccuracyTouch meta:Unless="IsShortRange">
+                <meta:Unless meta:Cond="IsLongRange">0.60</meta:Unless>
+            </AccuracyTouch>
+            <AccuracyShort meta:Unless="IsShortRange">
+                <meta:Unless meta:Cond="IsLongRange">0.70</meta:Unless>
+            </AccuracyShort>
+            <AccuracyMedium meta:Unless="IsShortRange">
+                <meta:Unless meta:Cond="IsLongRange">0.65</meta:Unless>
+            </AccuracyMedium>
+            <AccuracyLong meta:Unless="IsShortRange">
+                <meta:Unless meta:Cond="IsLongRange">0.55</meta:Unless>
+            </AccuracyLong>
+        </statBases>
+
+        <!-- 装备属性 -->
+        <equippedStatOffsets>
+            <!-- 重武器减速 -->
+            <MoveSpeed meta:If="IsHeavyWeapon">-0.25</MoveSpeed>
+        </equippedStatOffsets>
+
+        <!-- 核心射击动词 -->
+        <verbs>
+            <li>
+                <verbClass>Verb_Shoot</verbClass>
+                <hasStandardCommand>true</hasStandardCommand>
+
+                <!-- 弹丸定义：这里假设有对应的ProjectileDef，实际使用需修改为真实存在的defName -->
+                <defaultProjectile meta:If="IsExplosive">Bullet_Rocket</defaultProjectile>
+                <defaultProjectile meta:If="IsShotgunSpread">Bullet_Shotgun</defaultProjectile>
+                <defaultProjectile meta:If="IsSpacerTech">
+                    <meta:Unless meta:Cond="IsExplosive">Bullet_ChargeRifle</meta:Unless>
+                </defaultProjectile>
+                <!-- 普通实弹 -->
+                <defaultProjectile meta:Unless="IsExplosive">
+                    <meta:Unless meta:Cond="IsShotgunSpread">
+                        <meta:Unless meta:Cond="IsSpacerTech">Bullet_AssaultRifle</meta:Unless>
+                    </meta:Unless>
+                </defaultProjectile>
+
+                <!-- 预热/瞄准时间 -->
+                <warmupTime meta:If="IsHeavyWeapon">3.5</warmupTime>
+                <warmupTime meta:If="IsLongRange">3.0</warmupTime>
+                <warmupTime meta:If="IsShortRange">0.6</warmupTime>
+                <!-- 中距离默认 -->
+                <warmupTime meta:Unless="IsHeavyWeapon">
+                    <meta:Unless meta:Cond="IsLongRange">
+                        <meta:Unless meta:Cond="IsShortRange">1.0</meta:Unless>
+                    </meta:Unless>
+                </warmupTime>
+
+                <!-- 射程 -->
+                <range meta:If="IsShortRange">15.9</range>
+                <range meta:If="IsLongRange">44.9</range>
+                <range meta:Unless="IsShortRange">
+                    <meta:Unless meta:Cond="IsLongRange">30.9</meta:Unless>
+                </range>
+
+                <!-- 连发设置 -->
+                <burstShotCount meta:If="IsBurstFire">3</burstShotCount>
+                <!-- 链式霰弹枪特例：连发+霰弹 -->
+                <burstShotCount meta:If="IsShotgunSpread">
+                    <meta:If meta:Cond="IsBurstFire">3</meta:If>
+                </burstShotCount>
+
+                <ticksBetweenBurstShots meta:If="IsBurstFire">10</ticksBetweenBurstShots>
+                <!-- 极速连发（如电荷机枪） -->
+                <ticksBetweenBurstShots meta:If="IsHeavyWeapon">
+                    <meta:If meta:Cond="IsBurstFire">5</meta:If>
+                </ticksBetweenBurstShots>
+
+                <!-- 强制未命中半径（爆炸物专用） -->
+                <forcedMissRadius meta:If="IsExplosive">1.9</forcedMissRadius>
+
+                <!-- 音效占位符 -->
+                <soundCast meta:If="IsSpacerTech">Shot_ChargeRifle</soundCast>
+                <soundCast meta:If="IsExplosive">Shot_IncendiaryLauncher</soundCast>
+                <soundCast meta:If="IsShotgunSpread">Shot_Shotgun</soundCast>
+                <soundCast meta:Unless="IsSpacerTech">
+                    <meta:Unless meta:Cond="IsExplosive">
+                        <meta:Unless meta:Cond="IsShotgunSpread">Shot_AssaultRifle</meta:Unless>
+                    </meta:Unless>
+                </soundCast>
+            </li>
+        </verbs>
+
+        <!-- 一次性武器逻辑 -->
+        <destroyOnDrop meta:If="IsDisposable">true</destroyOnDrop>
+
+        <!-- 成本列表 -->
+        <costList>
+            <Steel>40</Steel>
+            <ComponentIndustrial>3</ComponentIndustrial>
+
+            <!-- 高级材料 -->
+            <Plasteel meta:If="IsSpacerTech">30</Plasteel>
+            <ComponentSpacer meta:If="IsSpacerTech">2</ComponentSpacer>
+            <Chemfuel meta:If="IsExplosive">20</Chemfuel>
+        </costList>
+
+        <!-- 武器标签：决定谁会使用 -->
+        <weaponTags>
+            <!-- 基础标签 -->
+            <li meta:If="IsShortRange">SimpleGun</li>
+
+            <!-- 进阶标签 -->
+            <li meta:If="IsSpacerTech">SpacerGun</li>
+            <li meta:Unless="IsSpacerTech">IndustrialGun</li>
+
+            <!-- 狙击手 -->
+            <li meta:If="IsLongRange">SniperRifle</li>
+
+            <!-- 强盗/突袭者逻辑 -->
+            <li meta:If="IsExplosive">GunHeavy</li>
+            <li meta:If="IsBurstFire">AssaultRifle</li>
+        </weaponTags>
+
+    </ThingDef>
+</Defs>

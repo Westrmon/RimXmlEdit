@@ -11,12 +11,13 @@ namespace RimXmlEdit.Core.Parse;
 public class DefParser
 {
     private readonly ILogger _log;
+    private readonly AssemblyScanner _scanner;
+    private Type?[] _comps;
 
     private string _dllPath;
     private bool _isFirst;
     private Type? _mustTransAttr;
     private RawTypeCache _rawTypeCache;
-    private readonly AssemblyScanner _scanner;
     private SchemaBuilder _schemaBuilder;
 
     // Core Types Cache
@@ -62,6 +63,11 @@ public class DefParser
         _tDefOf = verseAssembly.GetType("RimWorld.DefOf");
         _transAttr = verseAssembly.GetType("Verse.TranslationHandleAttribute");
         _mustTransAttr = verseAssembly.GetType("Verse.MustTranslateAttribute");
+        _comps =
+        [
+            verseAssembly.GetType("Verse.CompProperties"),
+            verseAssembly.GetType("Verse.HediffCompProperties")
+        ];
         _scanner.GetCompsBaseType();
     }
 
@@ -79,7 +85,7 @@ public class DefParser
     {
         _log.LogNotify("Starting fresh parse for {Dll}", Path.GetFileName(_dllPath));
 
-        _schemaBuilder = new SchemaBuilder();
+        _schemaBuilder = new SchemaBuilder(_comps);
         _rawTypeCache = new RawTypeCache();
         var defOfMap = ExtractDefOfs();
         PerformDeepTypeScan();
@@ -155,13 +161,10 @@ public class DefParser
     {
         var baseComps = _scanner.GetCompsBaseType().ToList();
 
-        foreach (var type in _scanner.AllTypes.Where(type => type is { IsAbstract: false, IsInterface: false } 
+        foreach (var type in _scanner.AllTypes.Where(type => type is { IsAbstract: false, IsInterface: false }
                                                              && !TypeHelper.IsBannedType(type))
                      .Where(type => baseComps.Any(type.IsSubclassOf)))
-        {
             _schemaBuilder.GetOrCreatePolyClassId(type, t => CollectAndMapFields(t));
-            
-        }
     }
 
     private void PerformDeepTypeScan()
@@ -169,7 +172,8 @@ public class DefParser
         if (_tDef == null) return;
 
         // 种子节点：所有的 Def 子类 + CompProperties
-        var seeds = _scanner.AllTypes.Where(t => t.Name.StartsWith("CompProperties") && !TypeHelper.IsBannedType(t)).ToList();
+        var seeds = _scanner.AllTypes.Where(t => t.Name.StartsWith("CompProperties") && !TypeHelper.IsBannedType(t))
+            .ToList();
         var seeds2 = _scanner.AllTypes
             .Where(t => t.IsSubclassOf(_tDef) && !TypeHelper.IsBannedType(t)).ToList();
         seeds2.AddRange(seeds);
@@ -193,10 +197,7 @@ public class DefParser
                 queue.Enqueue(finalType);
         }
 
-        foreach (var item in seeds)
-        {
-            _schemaBuilder.GetOrCreatePolyClassId(item, t => CollectAndMapFields(t));
-        }
+        foreach (var item in seeds) _schemaBuilder.GetOrCreatePolyClassId(item, t => CollectAndMapFields(t));
     }
 
     private Dictionary<string, string> AnalyzeDefCasts()
@@ -215,6 +216,7 @@ public class DefParser
             if (defFields.Count == 1)
                 casts[type.FullName ?? type.Name] = defFields[0].FieldType.FullName ?? defFields[0].FieldType.Name;
         }
+
         return casts;
     }
 
@@ -403,9 +405,9 @@ public class AssemblyScanner
 
     public IEnumerable<Type> GetCompsBaseType()
     {
-        if (CompsBaseType != null) return  CompsBaseType;
-        CompsBaseType = AllTypes.Where(t => t.IsAbstract 
-                                            && t.BaseType == typeof(object) 
+        if (CompsBaseType != null) return CompsBaseType;
+        CompsBaseType = AllTypes.Where(t => t.IsAbstract
+                                            && t.BaseType == typeof(object)
                                             && t.Name.EndsWith("Comp"));
         return CompsBaseType;
     }
@@ -425,10 +427,21 @@ public class AssemblyScanner
 
 public class SchemaBuilder
 {
+    private readonly Type?[]? _comps;
     private readonly List<PossibleClass> _polyClasses = new();
     private readonly Dictionary<string, int> _polyClassIndexMap = new();
     private readonly Dictionary<Type, int> _schemaIdMap = new();
     private readonly List<TypeSchema> _schemas = new();
+
+    public SchemaBuilder(Type?[] comps)
+    {
+        _comps = comps;
+    }
+
+    public SchemaBuilder()
+    {
+        _comps = null;
+    }
 
     public List<TypeSchema> GetSchemas()
     {
@@ -463,19 +476,19 @@ public class SchemaBuilder
 
     public int GetOrCreatePolyClassId(Type type, Func<Type, List<XmlFieldInfo>> fieldResolver)
     {
-        // var name = type.Name.Replace("Properties_", "");
         var name = type.Name;
         if (_polyClassIndexMap.TryGetValue(name, out var id)) return id;
 
         id = _polyClasses.Count;
         var pc = new PossibleClass { FullName = name, SchemaId = -1 };
+        pc.IsThingComp = _comps!.Any(t => type.IsSubclassOf(t));
 
         if (_schemaIdMap.TryGetValue(type, out var sid)) pc.SchemaId = sid;
 
         _polyClasses.Add(pc);
         _polyClassIndexMap[name] = id;
-        
-        try 
+
+        try
         {
             pc.Fields = fieldResolver(type);
         }
@@ -483,7 +496,7 @@ public class SchemaBuilder
         {
             pc.Fields = new List<XmlFieldInfo>();
         }
-        
+
         return id;
     }
 }

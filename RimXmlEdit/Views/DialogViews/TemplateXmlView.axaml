@@ -52,34 +52,34 @@
             <Setter Property="Background" Value="Transparent" />
         </Style>
         <Style Selector="ListBoxItem Border.Card">
-            <Setter Property="Background" Value="{DynamicResource ControlBackgroundBrush}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}"/>
-            <Setter Property="BorderThickness" Value="1"/>
-            <Setter Property="CornerRadius" Value="3"/>
+            <Setter Property="Background" Value="{DynamicResource ControlBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource BorderBrush}" />
+            <Setter Property="BorderThickness" Value="1" />
+            <Setter Property="CornerRadius" Value="3" />
             <!-- 添加简单的过渡动画，使交互更平滑 -->
             <Setter Property="Transitions">
                 <Transitions>
-                    <BrushTransition Property="Background" Duration="0:0:0.1"/>
-                    <BrushTransition Property="BorderBrush" Duration="0:0:0.1"/>
+                    <BrushTransition Property="Background" Duration="0:0:0.1" />
+                    <BrushTransition Property="BorderBrush" Duration="0:0:0.1" />
                 </Transitions>
             </Setter>
         </Style>
 
         <!-- 悬停状态 (PointerOver): 稍微变亮 -->
         <Style Selector="ListBoxItem:pointerover Border.Card">
-            <Setter Property="Background" Value="{DynamicResource ControlHoverBackgroundBrush}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource TextSecondaryBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource ControlHoverBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource TextSecondaryBrush}" />
         </Style>
 
         <!-- 选中状态 (Selected): 变为深蓝色背景 + 亮蓝色边框 -->
         <Style Selector="ListBoxItem:selected Border.Card">
-            <Setter Property="Background" Value="{DynamicResource SelectionBackgroundBrush}"/>
-            <Setter Property="BorderBrush" Value="{DynamicResource FocusBorderBrush}"/>
+            <Setter Property="Background" Value="{DynamicResource SelectionBackgroundBrush}" />
+            <Setter Property="BorderBrush" Value="{DynamicResource FocusBorderBrush}" />
         </Style>
-        
+
         <!-- 选中状态下的文本颜色调整 (可选，为了增加对比度) -->
         <Style Selector="ListBoxItem:selected TextBlock">
-            <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}"/>
+            <Setter Property="Foreground" Value="{DynamicResource TextOnAccentBrush}" />
         </Style>
     </UserControl.Styles>
 
@@ -96,7 +96,7 @@
 
         <!-- 内容区域 -->
         <ScrollViewer Grid.Row="1" Padding="0,0,15,0">
-            <StackPanel>
+            <StackPanel MaxWidth="602">
 
                 <!-- 1. 文件名称 -->
                 <TextBlock Text="文件名称 (File Name)" Classes="Header" />

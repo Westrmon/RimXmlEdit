@@ -27,10 +27,13 @@ public class AiAssistant
     /// <summary>
     ///     发送消息并获取回复 (非流式)
     /// </summary>
-    public async Task<string> AskAsync(string userMessage)
+    public async Task<string> AskAsync(string userMessage, bool saveHistory = true)
     {
-        _history.Add(new ChatMessage(ChatRole.User, userMessage));
+        var mess = new ChatMessage(ChatRole.User, userMessage);
+        _history.Add(mess);
         var response = await _chatClient.GetResponseAsync(_history);
+        if (!saveHistory)
+            _history.Remove(mess);
         return response.Text ?? string.Empty;
     }
 

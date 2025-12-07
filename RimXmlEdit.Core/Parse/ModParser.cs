@@ -10,8 +10,9 @@ namespace RimXmlEdit.Core.Parse;
 /// <summary>
 ///     将mod解析为 <see cref="RXStruct" />
 /// </summary>
-public class ModParser // 多线程标记
+public class ModParser
 {
+    // TODO 多线程标记, 此处被多次实例...要修复
     [Flags]
     public enum ParseRange
     {
@@ -20,6 +21,8 @@ public class ModParser // 多线程标记
         CommunityMod = 4
     }
 
+    private static readonly Lock _lock = new();
+
     private readonly ILogger _log = LoggerFactoryInstance.Factory.CreateLogger(nameof(ModParser));
 
     private readonly Regex _regex = new(@"\d\.\d", RegexOptions.Compiled);
@@ -27,6 +30,17 @@ public class ModParser // 多线程标记
     public IEnumerable<string>? LastParseErrorXMLPaths { get; private set; }
 
     public Dictionary<string, int> ModReferenceCount { get; private set; }
+
+    public IEnumerable<ModInfo> TryParse(
+        List<string>? modDir = null,
+        ParseRange? parseRange = null,
+        bool isForceSave = false)
+    {
+        using (_lock.EnterScope())
+        {
+            return Parse(modDir, parseRange, isForceSave);
+        }
+    }
 
     public IEnumerable<ModInfo> Parse(
         List<string>? modDir = null,
@@ -111,7 +125,7 @@ public class ModParser // 多线程标记
 
         if (mods.Count <= 0) return modInfo;
 
-        FiliterExistCache(mods, modInfo);
+        FilterExistCache(mods, modInfo);
         ParseMod(mods, modInfo);
         var infoAndPath = modInfo.Skip(officialInfoCount).Zip(mods, (info, path) => (info, path));
         // 自动保存为缓存(以mod为单位, 主要是为了可以获取结构信息)
@@ -119,8 +133,8 @@ public class ModParser // 多线程标记
         {
             var modName = item.path.Split(Path.DirectorySeparatorChar).Last();
             var modPath = Path.Combine(TempConfig.AppPath, "cache", modName + "XmlCache.bin");
-            using var fs = File.Create(modPath);
-            MessagePackSerializer.Serialize(fs, modInfo);
+            using var fs = new FileStream(modPath, FileMode.Create, FileAccess.Write);
+            MessagePackSerializer.Serialize(fs, item.info);
         }
 
         return modInfo;
@@ -158,6 +172,8 @@ public class ModParser // 多线程标记
                         data.FilePath = Path.GetRelativePath(mod, filePath);
                         modDefs.Add(data);
                     }
+
+                    _log.LogDebug("Xml {name} 解析完成", Path.GetFileName(filePath));
                 }
                 catch (XmlException e)
                 {
@@ -187,7 +203,7 @@ public class ModParser // 多线程标记
         }
     }
 
-    private static void FiliterExistCache(List<string> path, List<ModInfo> infos)
+    private static void FilterExistCache(List<string> path, List<ModInfo> infos)
     {
         var cachePath = Path.Combine(TempConfig.AppPath, "cache");
         var pending = new HashSet<string>(path);

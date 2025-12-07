@@ -72,7 +72,7 @@ public class TransNode : IDisposable
         _defDatabase.Clear();
         _inheritedFieldsCache.Clear();
 
-        var parsed = _modParser.Parse([_projectPath], ModParser.ParseRange.CommunityMod, true).ToList();
+        var parsed = _modParser.TryParse([_projectPath], ModParser.ParseRange.CommunityMod, true).ToList();
         if (parsed.Count == 0) _log.LogWarning($"{nameof(TransNode)} parsed 0 files.");
         _modInfos = parsed;
 
@@ -327,7 +327,7 @@ public class TransNode : IDisposable
                 return $"CompAbilityEffect_{className["CompProperties_Ability".Length..]}";
             if (className.StartsWith("CompProperties_"))
                 return className.Replace("CompProperties_", "Comp");
-            else if (className.StartsWith("HediffComp"))
+            if (className.StartsWith("HediffComp"))
                 return className.Replace("Properties", "");
         }
 

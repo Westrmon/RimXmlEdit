@@ -12,7 +12,6 @@ public class ExampleXmlManager
 
     private readonly Dictionary<string, TemplateData> _templates = new();
 
-    public Dictionary<string, List<string>> _defTypeToName = new();
     private bool _isInitialized;
 
     public ExampleXmlManager()
@@ -74,13 +73,9 @@ public class ExampleXmlManager
 
     public List<FilterInfo> GetFilterInfos(string templateName)
     {
-        if (_templates.TryGetValue(templateName, out var data))
-            return data.FilterMap.Select(kvp => new FilterInfo
-            {
-                Name = kvp.Key,
-                Description = kvp.Value
-            }).ToList();
-        return new List<FilterInfo>();
+        return _templates.TryGetValue(templateName, out var data)
+            ? data.FilterMap.Values.ToList()
+            : new List<FilterInfo>();
     }
 
     public string GetTemplateType(string templateName)
@@ -90,12 +85,12 @@ public class ExampleXmlManager
 
     public IEnumerable<string> GetAllTemplateType()
     {
-        return _defTypeToName.Keys;
+        return _templates.Select(t => t.Value.DefType).Distinct();
     }
 
     public IEnumerable<string> GetTemplateByType(string templateType)
     {
-        return _defTypeToName.TryGetValue(templateType, out var data) ? data : Array.Empty<string>();
+        return _templates.Where(t => t.Value.DefType == templateType).Select(t => t.Value.Name);
     }
 
     /// <summary>
@@ -121,16 +116,23 @@ public class ExampleXmlManager
     {
         try
         {
-            var doc = XDocument.Load(filePath, LoadOptions.SetLineInfo);
+            var doc = XDocument.Load(filePath, LoadOptions.SetLineInfo | LoadOptions.PreserveWhitespace);
             var rootDefType = doc.Root?.Attribute(MetaNs + "defType")?.Value ?? string.Empty;
-            var globalDescriptions = new Dictionary<string, string>();
+            var globalFilters = new Dictionary<string, FilterInfo>();
             var filterDefsNode = doc.Root?.Element(MetaNs + "FilterDefs");
+
             if (filterDefsNode != null)
                 foreach (var filterNode in filterDefsNode.Elements(MetaNs + "Filter"))
                 {
                     var name = filterNode.Attribute("Name")?.Value;
-                    var desc = filterNode.Attribute("Desc")?.Value;
-                    if (!string.IsNullOrEmpty(name)) globalDescriptions[name] = desc ?? string.Empty;
+                    if (string.IsNullOrEmpty(name)) continue;
+
+                    globalFilters[name] = new FilterInfo
+                    {
+                        Name = name,
+                        Description = filterNode.Attribute("Desc")?.Value ?? string.Empty,
+                        Group = filterNode.Attribute("Group")?.Value ?? string.Empty // 读取Group
+                    };
                 }
 
             var templateNodes = doc.Descendants().Where(x => x.Attribute(MetaNs + "Name") != null);
@@ -140,43 +142,32 @@ public class ExampleXmlManager
                 var name = node.Attribute(MetaNs + "Name")?.Value;
                 if (string.IsNullOrEmpty(name)) continue;
 
-                var templateDesc = node.Attribute(MetaNs + "Desc")?.Value ?? name;
-                // var currentDefType = node.Attribute(MetaNs + "defType")?.Value ?? rootDefType;
                 var usedFilters = new HashSet<string>();
                 foreach (var el in node.DescendantsAndSelf())
                 {
-                    if (el.Attribute(MetaNs + "If")?.Value is { } s1)
-                    {
-                        foreach (var item in s1.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-                        {
-                            usedFilters.Add(item);
-                        }
-                        
-                    }
-                    if (el.Attribute(MetaNs + "Unless")?.Value is { } s2)
-                    {
-                        foreach (var item in s2.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries))
-                        {
-                            usedFilters.Add(item);
-                        }
-                    }
+                    if (el.Attribute(MetaNs + "If")?.Value is { } s1) usedFilters.Add(s1);
+                    if (el.Attribute(MetaNs + "Unless")?.Value is { } s2) usedFilters.Add(s2);
+
+                    if (el.Name == MetaNs + "If" || el.Name == MetaNs + "Unless")
+                        if (el.Attribute(MetaNs + "Cond")?.Value is { } s3)
+                            usedFilters.Add(s3);
                 }
 
-                var filterMap = new Dictionary<string, string>();
+                var filterMap = new Dictionary<string, FilterInfo>();
                 foreach (var filterKey in usedFilters)
-                    if (globalDescriptions.TryGetValue(filterKey, out var desc)) filterMap[filterKey] = desc;
-                    else filterMap[filterKey] = string.Empty;
+                    if (globalFilters.TryGetValue(filterKey, out var info))
+                        filterMap[filterKey] = info;
+                    else
+                        filterMap[filterKey] = new FilterInfo { Name = filterKey };
 
                 _templates[name] = new TemplateData
                 {
                     Name = name,
-                    Description = templateDesc,
+                    Description = node.Attribute(MetaNs + "Desc")?.Value ?? name,
                     DefType = rootDefType,
                     XmlContent = node,
                     FilterMap = filterMap
                 };
-                _defTypeToName.TryAdd(rootDefType, new List<string>());
-                _defTypeToName[rootDefType].Add(name);
             }
         }
         catch (Exception ex)
@@ -185,38 +176,66 @@ public class ExampleXmlManager
         }
     }
 
+    /// <summary>
+    ///     递归处理 XML 节点，处理属性过滤和内联标签过滤
+    /// </summary>
     private void ProcessFiltersRecursively(XElement element, HashSet<string> filters)
     {
-        var children = element.Elements().ToList();
-        foreach (var child in children)
+        var nodes = element.Nodes().ToList();
+
+        foreach (var node in nodes)
         {
-            var remove = false;
+            if (node is not XElement childEl) continue;
 
-            if (child.Attribute(MetaNs + "If")?.Value is { } ifVal)
+            if (childEl.Name.Namespace == MetaNs &&
+                (childEl.Name.LocalName == "If" || childEl.Name.LocalName == "Unless"))
             {
-                if (ifVal.Split('|',  StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                    .All(x => !filters.Contains(x))) 
-                    remove = true;
-            }
+                var cond = childEl.Attribute(MetaNs + "Cond")?.Value;
+                var isIf = childEl.Name.LocalName == "If";
+                var keep = true;
 
-            if (!remove && child.Attribute(MetaNs + "Unless")?.Value is { } unlessVal)
-            {
-                if (unlessVal.Split('|',  StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
-                    .All(x => filters.Contains(x))) 
-                    remove = true;
-            }
+                if (!string.IsNullOrEmpty(cond))
+                {
+                    var contains = filters.Contains(cond);
+                    keep = isIf ? contains : !contains;
+                }
 
-            if (remove)
-                child.Remove();
+                if (keep)
+                {
+                    ProcessFiltersRecursively(childEl, filters);
+                    childEl.ReplaceWith(childEl.Nodes());
+                }
+                else
+                {
+                    childEl.Remove();
+                }
+            }
             else
-                ProcessFiltersRecursively(child, filters);
+            {
+                var remove = false;
+
+                if (childEl.Attribute(MetaNs + "If")?.Value is { } ifVal)
+                    if (ifVal.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                        .All(x => !filters.Contains(x)))
+                        remove = true;
+
+                if (!remove && childEl.Attribute(MetaNs + "Unless")?.Value is { } unlessVal)
+                    if (unlessVal.Split('|', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                        .All(x => filters.Contains(x)))
+                        remove = true;
+
+                if (remove)
+                    childEl.Remove();
+                else
+                    ProcessFiltersRecursively(childEl, filters);
+            }
         }
     }
 
     private NodeBlueprint ConvertToBlueprint(XElement element)
     {
         var bp = new NodeBlueprint(element.Name.LocalName);
-        if (!element.HasElements) bp.Value = element.Value;
+        if (!element.HasElements) bp.Value = element.Value.Replace(" ", "").Replace("\n", "");
         foreach (var attr in element.Attributes())
         {
             if (attr.Name.Namespace == MetaNs) continue;
@@ -236,7 +255,7 @@ public class ExampleXmlManager
         public string Description { get; set; } = string.Empty;
         public string DefType { get; set; } = string.Empty;
         public XElement XmlContent { get; set; }
-        public Dictionary<string, string> FilterMap { get; set; } = new();
+        public Dictionary<string, FilterInfo> FilterMap { get; set; } = new();
     }
 }
 
@@ -244,4 +263,5 @@ public class FilterInfo
 {
     public string Name { get; set; } = string.Empty;
     public string Description { get; set; } = string.Empty;
+    public string Group { get; set; } = string.Empty;
 }

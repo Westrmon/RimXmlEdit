@@ -73,7 +73,7 @@ public partial class MainViewModel
             using (_saveLock.EnterScope())
             {
                 if (string.IsNullOrEmpty(_currentFilePath)) return;
-                
+
                 _defManager.SaveToFile(_currentFilePath);
                 _defDefineInfo.Save();
                 _log.LogNotify("[{Time}] Success to save", DateTime.Now);
@@ -87,9 +87,10 @@ public partial class MainViewModel
 
     private void FileExplorerOnOnCreateTemplate(object? sender, TemplateXmlViewModel e)
     {
+        DefTreeNodes.Clear();
         if (e.SelectedPrimaryCategory?.Name == "None")
             return;
-        
+
         if (e.SelectedSecondaryCategory == null)
         {
             _log.LogError("Selected template name is null");

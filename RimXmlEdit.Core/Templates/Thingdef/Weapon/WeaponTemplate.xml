@@ -1,0 +1,86 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Defs xmlns:meta="RimXmlEdit.Template"
+    meta:defType="ThingDef">
+    <meta:FilterDefs>
+        <meta:Filter Name="MeleeWeapon" Desc="[武器类型] 是否为近战武器（否则为远程武器）" />
+        <meta:Filter Name="LegendaryGrade" Desc="[武器品质] 传奇品质是否影响基础属性" />
+        <meta:Filter Name="SpacerTech" Desc="[科技等级] 是否为星际时代科技（否则为工业时代）" />
+        <meta:Filter Name="UseAdvancedMaterials" Desc="[制作材料] 是否使用高级材料（如零部件等）" />
+    </meta:FilterDefs>
+
+    <ThingDef meta:Name="CustomWeaponTemplate"
+        meta:Desc="自定义通用武器框架模板，可通过条件控制武器类型、品质、科技和材料。"
+        ParentName="BaseWeapon">
+        <defName>CustomWeapon</defName>
+        <label>Conditional Weapon</label>
+        <description>A weapon configured via template filters.</description>
+
+        <statBases>
+            <!-- 近战与远程武器使用不同的基础伤害属性 -->
+            <MeleeWeapon_AverageDamage meta:If="MeleeWeapon">18</MeleeWeapon_AverageDamage>
+            <RangedWeapon_DamageAmount meta:Unless="MeleeWeapon">14</RangedWeapon_DamageAmount>
+
+            <!-- 传奇品质获得额外属性加成 -->
+            <AccuracyTouch meta:If="LegendaryGrade">2.5</AccuracyTouch>
+            <AccuracyTouch meta:Unless="LegendaryGrade">2.0</AccuracyTouch>
+
+            <Beauty>3</Beauty>
+            <MarketValue>450</MarketValue>
+            <Mass>1.8</Mass>
+            <MaxHitPoints>100</MaxHitPoints>
+        </statBases>
+
+        <techLevel>Industrial</techLevel>
+        <techLevel meta:If="SpacerTech">Spacer</techLevel>
+
+        <costList>
+            <!-- 基础材料需求 -->
+            <Steel>75</Steel>
+            <ComponentIndustrial>2</ComponentIndustrial>
+
+            <!-- 启用高级材料时替换基础材料 -->
+            <Plasteel meta:If="UseAdvancedMaterials">50</Plasteel>
+            <ComponentSpacer meta:If="UseAdvancedMaterials">1</ComponentSpacer>
+
+            <!-- 当使用高级材料时，移除基础材料项 -->
+            <Steel meta:Unless="UseAdvancedMaterials">75</Steel>
+            <ComponentIndustrial meta:Unless="UseAdvancedMaterials">2</ComponentIndustrial>
+        </costList>
+
+        <verbs>
+            <!-- 近战武器 -->
+            <li Class="Verb_MeleeAttack" meta:If="MeleeWeapon">
+                <defaultProjectile>Bullet_Stone</defaultProjectile>
+                <soundCast>Pawn_Melee_Punch_HitPawn</soundCast>
+            </li>
+
+            <!-- 远程武器 -->
+            <li Class="Verb_Shoot" meta:Unless="MeleeWeapon">
+                <defaultProjectile>Projectile_ArrowStone</defaultProjectile>
+                <burstShotCount>1</burstShotCount>
+                <warmupTime>1.2</warmupTime>
+                <range>25</range>
+                <soundCast>Gunshot_Bow</soundCast>
+            </li>
+        </verbs>
+
+        <tools>
+            <!-- 仅近战武器定义工具 -->
+            <li meta:If="MeleeWeapon">
+                <label>blade</label>
+                <capacities>
+                    <li>Cut</li>
+                </capacities>
+                <power>12</power>
+                <cooldownTime>2.0</cooldownTime>
+                <linkedBodyPartsGroup>BladeAttackTool</linkedBodyPartsGroup>
+            </li>
+        </tools>
+
+        <equippedStatOffsets>
+            <!-- 传奇品质提供额外的装备状态加成 -->
+            <AimingDelayFactor meta:If="LegendaryGrade">-0.1</AimingDelayFactor>
+            <WorkSpeedGlobal meta:If="LegendaryGrade">0.05</WorkSpeedGlobal>
+        </equippedStatOffsets>
+    </ThingDef>
+</Defs>

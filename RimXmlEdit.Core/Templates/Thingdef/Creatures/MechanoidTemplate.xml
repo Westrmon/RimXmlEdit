@@ -1,0 +1,198 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs xmlns:meta="RimXmlEdit.Template"
+    meta:defType="ThingDef">
+
+    <!-- ==========================================
+         过滤器定义：基于吨位和功能模块
+         ========================================== -->
+    <meta:FilterDefs>
+        <!-- 量级定义 -->
+        <meta:Filter Name="IsHeavy" Desc="[量级] 重型机械 (蜈蚣/隧道/百夫长，高护甲/低移速/大体型)" />
+        <meta:Filter Name="IsBoss" Desc="[量级] 指挥官级 (百夫长/战争女皇，拥有护盾/极高血量)" />
+
+        <!-- 职能定义 -->
+        <meta:Filter Name="IsCombat" Desc="[职能] 战斗专用 (强化战斗AI/护甲/武器挂载点)" />
+        <meta:Filter Name="IsWorker" Desc="[职能] 工作专用 (清洁/建造/搬运，无战斗加成)" />
+
+        <!-- 战斗风格 -->
+        <meta:Filter Name="IsMelee" Desc="[战术] 近战突击 (飞螳/隧道，高移速/锋利肢体)" />
+
+        <!-- 工作类型 (仅在IsWorker下生效) -->
+        <meta:Filter Name="CanClean" Desc="[工作] 清洁模块" />
+        <meta:Filter Name="CanBuild" Desc="[工作] 建造模块" />
+    </meta:FilterDefs>
+
+    <!-- ==========================================
+         万能机械体模版 (种族定义)
+         ========================================== -->
+    <ThingDef meta:Name="UniversalMechanoidTemplate"
+        meta:Desc="通用机械体种族生成器"
+        ParentName="BaseMechanoid">
+
+        <defName> Generated_Mech</defName>
+
+        <label>
+            <meta:If meta:Cond="IsBoss">mechanoid commander</meta:If>
+            <meta:If meta:Cond="IsWorker">utility droid</meta:If>
+            <meta:If meta:Cond="IsMelee">bladed mech</meta:If>
+            <meta:Unless meta:Cond="IsWorker">combat mechanoid</meta:Unless>
+        </label>
+
+        <!-- 统计数值 -->
+        <statBases>
+            <!-- 移动速度 -->
+            <MoveSpeed>
+                <meta:If meta:Cond="IsMelee">5.6</meta:If> <!-- 飞螳极快 -->
+                <meta:If meta:Cond="IsWorker">3.8</meta:If> <!-- 清洁工中等 -->
+                <meta:If meta:Cond="IsHeavy">1.9</meta:If>  <!-- 蜈蚣极慢 -->
+                <meta:If meta:Cond="IsBoss">2.5</meta:If>  <!-- 百夫长较慢 -->
+                <!-- 默认远程轻型 -->
+                <meta:Unless meta:Cond="IsHeavy">
+                    <meta:Unless meta:Cond="IsMelee">4.5</meta:Unless>
+                </meta:Unless>
+            </MoveSpeed>
+
+            <!-- 护甲值 -->
+            <ArmorRating_Sharp>
+                <meta:If meta:Cond="IsBoss">1.10</meta:If>
+                <meta:If meta:Cond="IsHeavy">0.85</meta:If>
+                <meta:If meta:Cond="IsWorker">0.10</meta:If>
+                <meta:Unless meta:Cond="IsHeavy">
+                    <meta:Unless meta:Cond="IsWorker">0.40</meta:Unless>
+                </meta:Unless>
+            </ArmorRating_Sharp>
+            <ArmorRating_Blunt>
+                <meta:If meta:Cond="IsBoss">0.70</meta:If>
+                <meta:If meta:Cond="IsHeavy">0.55</meta:If>
+                <meta:If meta:Cond="IsWorker">0.05</meta:If>
+                <meta:Unless meta:Cond="IsHeavy">
+                    <meta:Unless meta:Cond="IsWorker">0.20</meta:Unless>
+                </meta:Unless>
+            </ArmorRating_Blunt>
+
+            <!-- 市场价值与能量消耗 -->
+            <MarketValue meta:If="IsBoss">2400</MarketValue>
+            <MarketValue meta:If="IsHeavy">1200</MarketValue>
+            <MarketValue meta:If="IsWorker">400</MarketValue>
+
+            <BandwidthCost meta:If="IsBoss">5</BandwidthCost>
+            <BandwidthCost meta:If="IsHeavy">3</BandwidthCost>
+            <BandwidthCost meta:Unless="IsHeavy">1</BandwidthCost>
+        </statBases>
+
+        <!-- 种族属性 -->
+        <race>
+            <!-- 智能 -->
+            <intelligence>ToolUser</intelligence>
+            <thinkTreeMain>Mechanoid</thinkTreeMain>
+
+            <!-- 体型 -->
+            <baseBodySize meta:If="IsBoss">3.5</baseBodySize>
+            <baseBodySize meta:If="IsHeavy">2.5</baseBodySize>
+            <baseBodySize meta:Unless="IsHeavy">0.8</baseBodySize>
+
+            <lifeStageAges>
+                <li>
+                    <def>MechanoidFullyFormed</def>
+                    <minAge>0</minAge>
+                    <!-- 只有战斗类有武器挂载声效 -->
+                    <soundWounded meta:If="IsCombat">Pawn_Mech_Scyther_Wounded</soundWounded>
+                    <soundDeath meta:If="IsCombat">Pawn_Mech_Scyther_Death</soundDeath>
+                    <soundCall meta:If="IsCombat">Pawn_Mech_Scyther_Call</soundCall>
+                </li>
+            </lifeStageAges>
+
+            <!-- 工作类型 (Biotech内容) -->
+            <mechEnabledWorkTypes meta:If="IsWorker">
+                <li meta:If="CanClean">Cleaning</li>
+                <li meta:If="CanBuild">Construction</li>
+            </mechEnabledWorkTypes>
+        </race>
+
+        <!-- 肢体与攻击工具 -->
+        <tools>
+            <!-- 1. 飞螳式：锋利刀刃 -->
+            <li meta:If="IsMelee">
+                <label>left blade</label>
+                <capacities>
+                    <li>Cut</li>
+                    <li>Stab</li>
+                </capacities>
+                <power>22</power>
+                <cooldownTime>1.5</cooldownTime>
+                <linkedBodyPartsGroup>LeftHand</linkedBodyPartsGroup>
+            </li>
+            <li meta:If="IsMelee">
+                <label>right blade</label>
+                <capacities>
+                    <li>Cut</li>
+                    <li>Stab</li>
+                </capacities>
+                <power>22</power>
+                <cooldownTime>1.5</cooldownTime>
+                <linkedBodyPartsGroup>RightHand</linkedBodyPartsGroup>
+            </li>
+
+            <!-- 2. 重型撞击 (蜈蚣/百夫长) -->
+            <li meta:If="IsHeavy">
+                <label>head</label>
+                <capacities>
+                    <li>Blunt</li>
+                </capacities>
+                <power>18</power>
+                <cooldownTime>2.6</cooldownTime>
+                <linkedBodyPartsGroup>HeadAttackTool</linkedBodyPartsGroup>
+            </li>
+
+            <!-- 3. 工作机/轻型远程：普通撞击 -->
+            <li meta:Unless="IsMelee">
+                <meta:Unless meta:Cond="IsHeavy">
+                    <label>head</label>
+                    <capacities>
+                        <li>Blunt</li>
+                    </capacities>
+                    <power>6</power>
+                    <cooldownTime>2.0</cooldownTime>
+                    <linkedBodyPartsGroup>HeadAttackTool</linkedBodyPartsGroup>
+                </meta:Unless>
+            </li>
+        </tools>
+
+        <!-- 组件 -->
+        <comps>
+            <!-- 护盾发生器 (Boss专用, 如百夫长) -->
+            <li Class="CompProperties_ProjectileInterceptor" meta:If="IsBoss">
+                <radius>4.9</radius>
+                <interceptGroundProjectiles>true</interceptGroundProjectiles>
+                <color>(0.8, 0.8, 1.0)</color>
+                <reactivateTicks>1800</reactivateTicks>
+            </li>
+
+            <!-- 炮塔枪 (蜈蚣/Boss专用) - 模拟内置重武器 -->
+            <li Class="CompProperties_TurretGun" meta:If="IsHeavy">
+                <turretDef>Gun_HeavyChargeBlaster</turretDef> <!-- 示例武器 -->
+                <angleOffset>0</angleOffset>
+            </li>
+
+            <!-- 机械体通用：死亡爆炸 -->
+            <li Class="CompProperties_MechPowerCell">
+                <totalPowerOutput>1000</totalPowerOutput>
+            </li>
+        </comps>
+
+        <butcherProducts>
+            <Steel>
+                <meta:If meta:Cond="IsHeavy">50</meta:If>
+                <meta:Unless meta:Cond="IsHeavy">15</meta:Unless>
+            </Steel>
+            <Plasteel>
+                <meta:If meta:Cond="IsBoss">20</meta:If>
+                <meta:If meta:Cond="IsHeavy">10</meta:If>
+                <meta:Unless meta:Cond="IsHeavy">2</meta:Unless>
+            </Plasteel>
+            <ComponentIndustrial meta:Unless="IsBoss">1</ComponentIndustrial>
+            <ComponentSpacer meta:If="IsBoss">1</ComponentSpacer>
+        </butcherProducts>
+
+    </ThingDef>
+</Defs>

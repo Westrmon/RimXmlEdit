@@ -23,9 +23,9 @@ public class Program
         MessagePackSerializer.DefaultOptions = MessagePackSerializerOptions.Standard
             .WithResolver(CompositeResolver.Create(
                 new IMessagePackFormatter[] { new ObjectFieldInfoFormatter() },
-                new IFormatterResolver[] { StandardResolver.Instance }))
-            .WithCompression(MessagePackCompression.Lz4Block);
-        Test6();
+                new IFormatterResolver[] { StandardResolver.Instance }));
+        // .WithCompression(MessagePackCompression.Lz4Block);
+        Test3();
     }
 
     private static void Test1()
@@ -65,7 +65,7 @@ public class Program
         File.WriteAllText(@"D:\Desktop\test.xml", txt2);
     }
 
-    private static async void Test3()
+    private static void Test3()
     {
         var appsetting = new AppSettings();
         using var ft = File.OpenText("AiTest.txt");
@@ -73,18 +73,42 @@ public class Program
         appsetting.AI.Endpoint = content[0];
         appsetting.AI.ModelId = content[1];
         appsetting.AI.ApiKey = content[2];
-        var prompt = "你是一个 RimWorld 模组 XML 专家。请根据 XML 节点路径和 C# 数据类型，解释该节点的作用。" +
-                     "要求：中文，简练(30字内)，必须且只能返回纯 JSON 格式 (Key=路径, Value=描述)，不要包含 Markdown 代码块标记。待处理列表：";
-        var sets = "你是一个只输出 JSON 的 API 接口。";
-        appsetting.AI.AiPromptForDefineString = prompt + sets;
+        var prompt = """
+                     给定一系列环世界（RimWorld）的XML标签，请解释每个节点在游戏中的作用。返回纯JSON格式，其中键为节点名称（字符串），值为对该节点作用的准确简练描述（字符串, 30字内）。描述需基于游戏机制，贴合游戏事实，避免直接翻译节点名称。
+                     要求：
+                     描述应简洁明了，聚焦于节点在游戏中的实际功能。
+                     确保描述符合环世界游戏的设定和规则，不引入主观猜测。
+                     节点名称保持原样作为JSON的键，无需修改或翻译。
+                     示例输入
+                     - healthScale
+                     示例输出：
+                     {
+                     "healthScale": "控制生物体的生命值缩放因子，影响其最大健康值。",
+                     }
+                     请严格按照此格式响应，只输出JSON对象，不附加任何额外文本,不要包含 Markdown 代码块标记。待处理列表：
+                     """;
+        // var sets = "你是一个只输出 JSON 的 API 接口。";
+        appsetting.AI.AiPromptForDefineString = prompt;
         appsetting.AI.AIProvider = AiProvider.OpenAI;
         NodeInfoManager manager = new(null);
         manager.Init();
         var defineInfo = new NodeDefineInfo(appsetting, manager.DataCache);
+        defineInfo.MaxDepth = 4;
         defineInfo.Init();
-        var s = new RXStruct { Defs = manager.DataCache.DefInfos };
-        // defineInfo.CreateModDefineFile(s, "office");
-        await defineInfo.AutoFillDescriptionsWithAi();
+        // var s = new RXStruct();
+        // manager.DataCache.Comps.Where(t => t.IsThingComp).ToList()
+        //     .ForEach(g =>
+        //     {
+        //         s.Defs.Add(new DefInfo() { TagName = g.FullName, Fields = g.Fields });
+        //     });
+        LoggerFactoryInstance.SetConsoleLevel(LoggerFactoryInstance.LogLevelConfig.Debug);
+        // var mod = new ModParser();
+        // var s = mod.TryParse([@"D:\steam\steamapps\workshop\content\294100"], ModParser.ParseRange.CommunityMod);
+        // var ds = s.SelectMany(t => t.Defs);
+        // defineInfo.CreateModDefineFile(ds, "common");
+        // defineInfo.AutoFillDescriptionsWithAi(batches: 150).Wait();
+
+        Console.WriteLine("Finished");
         while (true)
         {
         }

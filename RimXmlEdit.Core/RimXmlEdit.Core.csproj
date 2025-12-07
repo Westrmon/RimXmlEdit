@@ -23,8 +23,8 @@
     </ItemGroup>
 
     <ItemGroup>
-        <None Remove="Templates\*.xml"/>
-        <Content Include="Templates\*.xml">
+        <!--        <None Remove="Templates\**\*.xml"/>-->
+        <Content Include="Templates\**\*.xml">
             <CopyToOutputDirectory>Always</CopyToOutputDirectory>
         </Content>
     </ItemGroup>

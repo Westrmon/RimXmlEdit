@@ -42,7 +42,7 @@ public class InitProject
             .WithResolver(CompositeResolver.Create(
                 new IMessagePackFormatter[] { new ObjectFieldInfoFormatter() },
                 new IFormatterResolver[] { StandardResolver.Instance }
-            ))
-            .WithCompression(MessagePackCompression.Lz4Block);
+            ));
+        // .WithCompression(MessagePackCompression.Lz4Block);
     }
 }

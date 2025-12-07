@@ -1,0 +1,241 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs xmlns:meta="RimXmlEdit.Template"
+    meta:defType="ThingDef">
+
+    <!-- ==========================================
+         过滤器定义：基于家具的功能和等级
+         ========================================== -->
+    <meta:FilterDefs>
+        <!-- 核心分类 (建议互斥选择) -->
+        <meta:Filter Name="IsBed" Group="0" Desc="[类型] 床铺 (用于睡眠/治疗/手术)" />
+        <meta:Filter Name="IsSeating" Group="0" Desc="[类型] 坐具 (椅子/沙发/王座)" />
+        <meta:Filter Name="IsTable" Group="0" Desc="[类型] 桌子 (用于吃饭/娱乐聚会/工作面)" />
+        <meta:Filter Name="IsStorage" Group="0" Desc="[类型] 储物 (货架/衣柜/展示柜)" />
+
+        <!-- 属性修饰 -->
+        <meta:Filter Name="IsLarge" Desc="[尺寸] 大型/双人 (双人床/大长桌/双格衣柜)" />
+        <meta:Filter Name="IsMedical" Desc="[功能] 医疗专用 (提高免疫速度/手术成功率，仅限床铺)" />
+        <meta:Filter Name="IsRoyal" Desc="[等级] 皇家/奢华 (王座/豪华大床，极高美观度，可能限制材质)" />
+        <meta:Filter Name="IsUpholstered" Desc="[材质] 软装/填充 (需要布/皮建造，如沙发/扶手椅，舒适度高)" />
+    </meta:FilterDefs>
+
+    <!-- ==========================================
+         万能家具模版
+         ========================================== -->
+    <ThingDef meta:Name="UniversalFurniture"
+        meta:Desc="通用家具生成器"
+        ParentName="FurnitureBase">
+
+        <!-- 自动生成 defName -->
+        <defName> Generated_Furniture</defName>
+
+        <label>generated furniture</label>
+        <description>A piece of furniture tailored for the colony.</description>
+
+        <!-- 核心类定义 -->
+        <thingClass>
+            <meta:If meta:Cond="IsBed">Building_Bed</meta:If>
+            <meta:If meta:Cond="IsStorage">Building_Storage</meta:If>
+            <meta:If meta:Cond="IsRoyal">
+                <meta:If meta:Cond="IsSeating">Building_Throne</meta:If>
+            </meta:If>
+            <!-- 默认建筑类 -->
+            <meta:Unless meta:Cond="IsBed">
+                <meta:Unless meta:Cond="IsStorage">
+                    <meta:Unless meta:Cond="IsRoyal">Building</meta:Unless>
+                </meta:Unless>
+            </meta:Unless>
+        </thingClass>
+
+        <!-- 贴图与尺寸逻辑 -->
+        <graphicData>
+            <texPath>Things/Building/Furniture/Bed/DoubleBed</texPath> <!-- 占位符 -->
+            <graphicClass>Graphic_Multi</graphicClass>
+            <shaderType>CutoutComplex</shaderType>
+            <drawSize>
+                <!-- 床 -->
+                <meta:If meta:Cond="IsBed">
+                    <meta:If meta:Cond="IsLarge">2,2</meta:If>
+                    <meta:Unless meta:Cond="IsLarge">1,2</meta:Unless>
+                </meta:If>
+                <!-- 桌子 -->
+                <meta:If meta:Cond="IsTable">
+                    <meta:If meta:Cond="IsLarge">4,2</meta:If>
+                    <meta:Unless meta:Cond="IsLarge">2,2</meta:Unless>
+                </meta:If>
+                <!-- 坐具：王座较大，普通椅子1x1 -->
+                <meta:If meta:Cond="IsSeating">
+                    <meta:If meta:Cond="IsRoyal">3,3</meta:If> <!-- 大王座 -->
+                    <meta:Unless meta:Cond="IsRoyal">1,1</meta:Unless>
+                </meta:If>
+                <!-- 储物 -->
+                <meta:If meta:Cond="IsStorage">
+                    <meta:If meta:Cond="IsLarge">2,1</meta:If>
+                    <meta:Unless meta:Cond="IsLarge">1,1</meta:Unless>
+                </meta:If>
+            </drawSize>
+        </graphicData>
+
+        <!-- 物理尺寸 (Occupancy) -->
+        <size>
+            <!-- 床 -->
+            <meta:If meta:Cond="IsBed">
+                <meta:If meta:Cond="IsLarge">2,2</meta:If>
+                <meta:Unless meta:Cond="IsLarge">1,2</meta:Unless>
+            </meta:If>
+            <!-- 桌子 -->
+            <meta:If meta:Cond="IsTable">
+                <meta:If meta:Cond="IsLarge">2,4</meta:If> <!-- 长桌 -->
+                <meta:Unless meta:Cond="IsLarge">2,2</meta:Unless>
+            </meta:If>
+            <!-- 坐具 -->
+            <meta:If meta:Cond="IsSeating">
+                <meta:If meta:Cond="IsRoyal">3,3</meta:If>
+                <meta:Unless meta:Cond="IsRoyal">1,1</meta:Unless>
+            </meta:If>
+            <!-- 储物 -->
+            <meta:If meta:Cond="IsStorage">
+                <meta:If meta:Cond="IsLarge">2,1</meta:If>
+                <meta:Unless meta:Cond="IsLarge">1,1</meta:Unless>
+            </meta:If>
+        </size>
+
+        <!-- 基础数值 -->
+        <statBases>
+            <MaxHitPoints>150</MaxHitPoints>
+            <Flammability>1.0</Flammability>
+
+            <!-- 舒适度：软装/床很高，普通椅子一般 -->
+            <Comfort meta:If="IsBed">0.75</Comfort>
+            <Comfort meta:If="IsUpholstered">0.80</Comfort> <!-- 沙发 -->
+            <Comfort meta:If="IsSeating">
+                <meta:Unless meta:Cond="IsUpholstered">0.5</meta:Unless>
+            </Comfort>
+
+            <!-- 美观度：皇家/展示柜高 -->
+            <Beauty>
+                <meta:If meta:Cond="IsRoyal">50</meta:If>
+                <meta:If meta:Cond="IsTable">2</meta:If>
+                <meta:Unless meta:Cond="IsRoyal">5</meta:Unless>
+            </Beauty>
+
+            <!-- 医疗床特效 -->
+            <MedicalTendQualityOffset meta:If="IsMedical">0.10</MedicalTendQualityOffset>
+            <ImmunityGainSpeedFactor meta:If="IsMedical">1.1</ImmunityGainSpeedFactor>
+            <SurgerySuccessChanceFactor meta:If="IsMedical">1.1</SurgerySuccessChanceFactor>
+
+            <!-- 建造工作量 -->
+            <WorkToBuild>
+                <meta:If meta:Cond="IsRoyal">8000</meta:If>
+                <meta:If meta:Cond="IsUpholstered">2500</meta:If>
+                <meta:Unless meta:Cond="IsRoyal">800</meta:Unless>
+            </WorkToBuild>
+        </statBases>
+
+        <!-- 建造材料 -->
+        <stuffCategories>
+            <li meta:Unless="IsUpholstered">Metallic</li>
+            <li meta:Unless="IsUpholstered">Woody</li>
+            <li meta:Unless="IsUpholstered">Stony</li>
+            <li meta:If="IsUpholstered">Fabric</li>
+            <li meta:If="IsUpholstered">Leathery</li>
+            <!-- 皇家特供 -->
+            <li meta:If="IsRoyal">Gold</li>
+        </stuffCategories>
+        <costStuffCount>
+            <meta:If meta:Cond="IsLarge">120</meta:If>
+            <meta:Unless meta:Cond="IsLarge">50</meta:Unless>
+        </costStuffCount>
+
+        <!-- 建筑属性 -->
+        <building>
+            <!-- 睡眠相关 -->
+            <bed_showSleeperBody meta:If="IsBed">true</bed_showSleeperBody>
+            <bed_healPerDay meta:If="IsBed">
+                <meta:If meta:Cond="IsMedical">12</meta:If>
+                <meta:Unless meta:Cond="IsMedical">4</meta:Unless>
+            </bed_healPerDay>
+
+            <!-- 坐具相关 -->
+            <isSittable meta:If="IsSeating">true</isSittable>
+
+            <!-- 储物相关 -->
+            <fixedStorageSettings meta:If="IsStorage">
+                <filter>
+                    <categories>
+                        <li>Apparel</li>
+                        <li>Weapons</li>
+                    </categories>
+                </filter>
+            </fixedStorageSettings>
+            <defaultStorageSettings meta:If="IsStorage">
+                <priority>Important</priority>
+                <filter>
+                    <categories>
+                        <li>Apparel</li>
+                    </categories>
+                </filter>
+            </defaultStorageSettings>
+        </building>
+
+        <!-- 表面类型 (桌子/书架) -->
+        <surfaceType>
+            <meta:If meta:Cond="IsTable">Eat</meta:If>
+            <meta:If meta:Cond="IsStorage">Item</meta:If>
+            <meta:Unless meta:Cond="IsTable">
+                <meta:Unless meta:Cond="IsStorage">None</meta:Unless>
+            </meta:Unless>
+        </surfaceType>
+
+        <!-- 交互与组件 -->
+        <inspectorTabs>
+            <!-- 储物必须有 storage tab -->
+            <li meta:If="IsStorage">ITab_Storage</li>
+        </inspectorTabs>
+
+        <comps>
+            <!-- 分配归属 (床/王座) -->
+            <li Class="CompProperties_AssignableToPawn" meta:If="IsBed">
+                <drawAssignmentOverlay>false</drawAssignmentOverlay>
+                <compClass>CompAssignableToPawn_Bed</compClass>
+            </li>
+            <li Class="CompProperties_AssignableToPawn" meta:If="IsRoyal">
+                <meta:If meta:Cond="IsSeating">
+                    <drawAssignmentOverlay>true</drawAssignmentOverlay>
+                    <compClass>CompAssignableToPawn_Throne</compClass>
+                </meta:If>
+            </li>
+
+            <!-- 冥想点 (王座/艺术品) -->
+            <li Class="CompProperties_MeditationFocus" meta:If="IsRoyal">
+                <statDef>MeditationFocusStrength</statDef>
+                <focusTypes>
+                    <li>Dignified</li> <!-- 庄严冥想 -->
+                </focusTypes>
+                <offsets>
+                    <li Class="FocusStrengthOffset_ThroneSatisfiesRequirements">
+                        <offset>0.20</offset>
+                    </li>
+                </offsets>
+            </li>
+        </comps>
+
+        <!-- 最小化与贸易 -->
+        <minifiedDef>MinifiedThing</minifiedDef>
+        <thingCategories>
+            <li>BuildingsFurniture</li>
+        </thingCategories>
+        <tradeTags>
+            <li>Furniture</li>
+            <li meta:If="IsRoyal">ExoticBuilding</li> <!-- 皇家家具比较稀有 -->
+        </tradeTags>
+
+        <!-- 研究需求 -->
+        <researchPrerequisites>
+            <li meta:If="IsMedical">HospitalBed</li>
+            <li meta:If="IsRoyal">ComplexFurniture</li>
+            <li meta:If="IsUpholstered">ComplexFurniture</li>
+        </researchPrerequisites>
+
+    </ThingDef>
+</Defs>

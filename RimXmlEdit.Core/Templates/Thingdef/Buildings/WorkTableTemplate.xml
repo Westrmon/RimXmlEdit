@@ -1,0 +1,173 @@
+<?xml version="1.0" encoding="utf-8"?>
+<Defs xmlns:meta="RimXmlEdit.Template"
+    meta:defType="ThingDef">
+
+    <!-- ==========================================
+         过滤器定义：基于工作台的物理和功能属性
+         ========================================== -->
+    <meta:FilterDefs>
+        <!-- 核心功能分类 -->
+        <meta:Filter Name="IsResearch" Desc="[功能] 研究用途 (用于科研，无生产清单，对应研究台)" />
+
+        <!-- 能源与科技 -->
+        <meta:Filter Name="IsPowered" Desc="[能源] 需要电力 (连接电网/有功率消耗/停电无法使用)" />
+        <meta:Filter Name="IsHighTech" Desc="[等级] 高科技/精密 (高造价/高工作效率/连接高级设施)" />
+
+        <!-- 构建属性 -->
+        <meta:Filter Name="IsMadeOfStuff" Desc="[材质]由此类材质制成 (如木头/石块/金属，影响外观和属性)" />
+
+        <!-- 环境属性 -->
+        <meta:Filter Name="RequiresCleanliness" Desc="[环境] 需要清洁 (烹饪/制药，脏地板降低效率或引发中毒)" />
+    </meta:FilterDefs>
+
+    <!-- ==========================================
+         万能工作台模版
+         ========================================== -->
+    <ThingDef meta:Name="UniversalWorkbench"
+        meta:Desc="通用工作台生成器（涵盖生产、研究、烹饪）"
+        ParentName="BuildingBase">
+
+        <!-- 自动生成 defName -->
+        <defName> Generated_Table</defName>
+
+        <label>generated workbench</label>
+        <description>A workstation for specific colony tasks.</description>
+
+        <!-- 核心类定义：研究台和生产台逻辑完全不同 -->
+        <thingClass meta:If="IsResearch">Building_ResearchBench</thingClass>
+        <thingClass meta:Unless="IsResearch">Building_WorkTable</thingClass>
+
+        <!-- 尺寸与贴图 -->
+        <graphicData>
+            <texPath>Things/Building/Production/TableMachining</texPath> <!-- 占位符 -->
+            <graphicClass>Graphic_Multi</graphicClass>
+            <shaderType>CutoutComplex</shaderType>
+
+            <!-- 高科技研究台通常很大(5x2)，普通台子(3x1) -->
+            <drawSize meta:If="IsResearch">
+                <meta:If meta:Cond="IsHighTech">7,4</meta:If> <!-- 视觉尺寸 -->
+                <meta:Unless meta:Cond="IsHighTech">5,3</meta:Unless>
+            </drawSize>
+            <drawSize meta:Unless="IsResearch">3.5,1.5</drawSize>
+
+            <damageData>
+                <cornerTL>Damage/Corner</cornerTL>
+                <cornerTR>Damage/Corner</cornerTR>
+                <cornerBL>Damage/Corner</cornerBL>
+                <cornerBR>Damage/Corner</cornerBR>
+            </damageData>
+        </graphicData>
+
+        <!-- 物理占地 -->
+        <size>
+            <meta:If meta:Cond="IsResearch">
+                <meta:If meta:Cond="IsHighTech">5,2</meta:If>
+                <meta:Unless meta:Cond="IsHighTech">3,2</meta:Unless>
+            </meta:If>
+            <!-- 大多数生产台是 3x1 -->
+            <meta:Unless meta:Cond="IsResearch">3,1</meta:Unless>
+        </size>
+
+        <designationCategory>Production</designationCategory>
+        <passability>PassThroughOnly</passability>
+        <pathCost>50</pathCost>
+        <hasInteractionCell>true</hasInteractionCell>
+        <interactionCellOffset>0,0,-1</interactionCellOffset> <!-- 站在椅子前面 -->
+        <surfaceType>Item</surfaceType> <!-- 可以放东西 -->
+
+        <!-- 造价与材料 -->
+        <costStuffCount meta:If="IsMadeOfStuff">150</costStuffCount>
+        <stuffCategories meta:If="IsMadeOfStuff">
+            <li>Metallic</li>
+            <li>Woody</li>
+            <li>Stony</li>
+        </stuffCategories>
+
+        <costList>
+            <!-- 如果不是由Stuff制成，需要固定材料 -->
+            <Steel meta:Unless="IsMadeOfStuff">100</Steel>
+            <ComponentIndustrial meta:If="IsPowered">2</ComponentIndustrial>
+
+            <!-- 高科技额外成本 -->
+            <Plasteel meta:If="IsHighTech">50</Plasteel>
+            <ComponentSpacer meta:If="IsHighTech">10</ComponentSpacer>
+        </costList>
+
+        <!-- 属性统计 -->
+        <statBases>
+            <MaxHitPoints>250</MaxHitPoints>
+            <WorkToBuild>2000</WorkToBuild>
+            <Flammability>1.0</Flammability>
+
+            <!-- 工作速度 -->
+            <WorkTableWorkSpeedFactor meta:Unless="IsResearch">
+                <meta:If meta:Cond="IsHighTech">1.0</meta:If>
+                <meta:Unless meta:Cond="IsHighTech">0.6</meta:Unless> <!-- 简易台子慢 -->
+            </WorkTableWorkSpeedFactor>
+
+            <!-- 研究速度 -->
+            <ResearchSpeedFactor meta:If="IsResearch">
+                <meta:If meta:Cond="IsHighTech">1.0</meta:If>
+                <meta:Unless meta:Cond="IsHighTech">0.6</meta:Unless>
+            </ResearchSpeedFactor>
+
+            <!-- 清洁度影响 (烹饪/制药) -->
+            <CleanlinessSpeedFactor meta:If="RequiresCleanliness"> 1.15 <!-- 越干净越快 -->
+            </CleanlinessSpeedFactor>
+        </statBases>
+
+        <!-- 设施链接 (工具柜/多元分析仪) -->
+        <compClass>CompThing</compClass> <!-- 基础 -->
+        <comps>
+            <!-- 电力组件 -->
+            <li Class="CompProperties_Power" meta:If="IsPowered">
+                <compClass>CompPowerTrader</compClass>
+                <shortCircuitInRain>true</shortCircuitInRain>
+                <basePowerConsumption>
+                    <meta:If meta:Cond="IsHighTech">350</meta:If>
+                    <meta:Unless meta:Cond="IsHighTech">120</meta:Unless>
+                </basePowerConsumption>
+            </li>
+            <li Class="CompProperties_Flickable" meta:If="IsPowered" />
+
+            <!-- 设施连接 -->
+            <li Class="CompProperties_AffectedByFacilities">
+                <linkableFacilities>
+                    <!-- 生产台连工具柜 -->
+                    <li meta:Unless="IsResearch">ToolCabinet</li>
+
+                    <!-- 研究台连文件柜/多元分析仪 -->
+                    <li meta:If="IsResearch">FilingCabinet</li> <!-- 假设模组或占位 -->
+                    <li meta:If="IsResearch">
+                        <meta:If meta:Cond="IsHighTech">MultiAnalyzer</meta:If>
+                    </li>
+                </linkableFacilities>
+            </li>
+
+            <!-- 高温推斥 (如炉灶) -->
+            <li Class="CompProperties_HeatPusher" meta:If="RequiresCleanliness">
+                <meta:If meta:Cond="IsPowered">
+                    <compClass>CompHeatPusherPowered</compClass>
+                    <heatPerSecond>3</heatPerSecond>
+                </meta:If>
+            </li>
+        </comps>
+
+        <!-- 交互界面 (Tabs) -->
+        <inspectorTabs>
+            <!-- 生产台有清单 -->
+            <li meta:Unless="IsResearch">ITab_Bills</li>
+        </inspectorTabs>
+
+        <!-- 放置要求 -->
+        <placeWorkers>
+            <li>PlaceWorker_ShowFacilitiesConnections</li>
+        </placeWorkers>
+
+        <!-- 研究台特有属性 -->
+        <researchPrerequisites meta:If="IsHighTech">
+            <li>MicroelectronicsBasics</li>
+        </researchPrerequisites>
+
+    </ThingDef>
+</Defs>

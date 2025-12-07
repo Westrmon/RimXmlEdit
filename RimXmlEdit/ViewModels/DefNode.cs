@@ -1,8 +1,3 @@
-using CommunityToolkit.Mvvm.ComponentModel;
-using CommunityToolkit.Mvvm.Input;
-using CommunityToolkit.Mvvm.Messaging;
-using RimXmlEdit.Core;
-using RimXmlEdit.Utils;
 using System;
 using System.Collections.ObjectModel;
 using System.Collections.Specialized;
@@ -10,28 +5,44 @@ using System.ComponentModel;
 using System.Linq;
 using System.Text;
 using System.Xml.Serialization;
+using CommunityToolkit.Mvvm.ComponentModel;
+using CommunityToolkit.Mvvm.Input;
+using CommunityToolkit.Mvvm.Messaging;
+using RimXmlEdit.Core;
+using RimXmlEdit.Utils;
 
 namespace RimXmlEdit.Models;
 
 /// <summary>
-/// Represents a single node in the XML Definition tree structure.
+///     Represents a single node in the XML Definition tree structure.
 /// </summary>
 public partial class DefNode : ObservableObject
 {
-    public event EventHandler? RequestDelete;
-
-    public event EventHandler<AttributeChangedEventArgs>? AttributeChanged;
+    [ObservableProperty] private string? _errorMessage;
 
     private bool _isEditable = true;
 
-    [ObservableProperty]
-    private string _tagName = string.Empty;
+    [DefaultValue(false)] [ObservableProperty]
+    private bool _isError;
 
-    [ObservableProperty]
-    private string? _value;
+    [DefaultValue(false)] [ObservableProperty]
+    private bool _isNodeExpanded;
 
-    [ObservableProperty]
-    private bool isClosedTag; // e.g., </defName>
+    [ObservableProperty] private string _tagName = string.Empty;
+
+    [ObservableProperty] private string? _value;
+
+    [ObservableProperty] private bool isClosedTag; // e.g., </defName>
+
+    public DefNode(string name, DefNode parent)
+    {
+        _tagName = name;
+        Parent = parent;
+        if (name != "Root")
+            RequestDelete += parent.OnChildRequestDelete;
+        //Parent?.Children.Add(this);
+        Children.CollectionChanged += Children_CollectionChanged;
+    }
 
     public bool IsEditable
     {
@@ -39,23 +50,12 @@ public partial class DefNode : ObservableObject
         set
         {
             _isEditable = value;
-            OnPropertyChanged(nameof(IsEditable));
+            OnPropertyChanged();
         }
     }
 
-    [ObservableProperty]
-    private string? _errorMessage;
-
-    [DefaultValue(false)]
-    [ObservableProperty]
-    private bool _isError;
-
-    [DefaultValue(false)]
-    [ObservableProperty]
-    private bool _isNodeExpanded;
-
     /// <summary>
-    /// Gets the collection of child nodes, enabling the hierarchical view.
+    ///     Gets the collection of child nodes, enabling the hierarchical view.
     /// </summary>
     public ObservableCollection<DefNode> Children { get; set; } = [];
 
@@ -64,12 +64,15 @@ public partial class DefNode : ObservableObject
     public DefNode Parent { get; set; }
 
     /// <summary>
-    /// Gets a value indicating whether this node has children and should be expandable.
+    ///     Gets a value indicating whether this node has children and should be expandable.
     /// </summary>
     [XmlIgnore]
     public bool HasChildren => Children.Count > 0;
 
     public bool IsCanRefTag => true;
+    public event EventHandler? RequestDelete;
+
+    public event EventHandler<AttributeChangedEventArgs>? AttributeChanged;
 
     [RelayCommand]
     private void AddAttribute(string attributeName)
@@ -86,7 +89,7 @@ public partial class DefNode : ObservableObject
         else if (attributeName.Equals("Class", StringComparison.OrdinalIgnoreCase))
         {
             // li标签class属性依托于上一class属性, 暂时搁置
-            if (DefNodeManager.IsPatch && TagName == "Operation" || TagName == "match")
+            if ((DefNodeManager.IsPatch && TagName == "Operation") || TagName == "match")
                 attrVm = new DefAttributeViewModel(this, attributeName, "")
                 {
                     EnumList = NodeInfoManager.PatchesClassEnums
@@ -102,6 +105,7 @@ public partial class DefNode : ObservableObject
         {
             return;
         }
+
         Attributes.Add(attrVm);
     }
 
@@ -122,16 +126,6 @@ public partial class DefNode : ObservableObject
         Attributes.Add(attr);
     }
 
-    public DefNode(string name, DefNode parent)
-    {
-        _tagName = name;
-        Parent = parent;
-        if (name != "Root")
-            RequestDelete += parent.OnChildRequestDelete;
-        //Parent?.Children.Add(this);
-        Children.CollectionChanged += Children_CollectionChanged;
-    }
-
     // 没有子节点的叶子节点没有值
     private void Children_CollectionChanged(object? sender, NotifyCollectionChangedEventArgs e)
     {
@@ -144,15 +138,18 @@ public partial class DefNode : ObservableObject
         }
     }
 
-    public string GetFullName(char split = '/')
+    public string GetFullName(char split = '/', bool addClasses = false)
     {
-        StringBuilder sb = new StringBuilder(3);
-        DefNode node = this;
+        var sb = new StringBuilder(3);
+        var node = this;
         do
         {
-            sb.Insert(0, $"{split}{node.TagName}");
+            sb.Insert(0, $"{split}{node.TagName}{(addClasses
+                ? GetClassesAttribute(node)
+                : string.Empty)}");
             node = node.Parent;
         } while (node != null && node.TagName != "Root");
+
         return sb.Remove(0, 1).ToString();
     }
 
@@ -162,10 +159,16 @@ public partial class DefNode : ObservableObject
         {
             child.RequestDelete -= OnChildRequestDelete;
             if (TagName == "Root")
-                WeakReferenceMessenger.Default.Send(new FlushViewMessage() { Sender = new WeakReference(child) });
+                WeakReferenceMessenger.Default.Send(new FlushViewMessage { Sender = new WeakReference(child) });
             else
                 Children.Remove(child);
         }
+    }
+
+    private static string GetClassesAttribute(DefNode node)
+    {
+        var classes = node.Attributes.FirstOrDefault(t => t.Name == "Class")?.Value as string;
+        return string.IsNullOrEmpty(classes) ? string.Empty : $"#{classes}";
     }
 
     partial void OnTagNameChanged(string value)
@@ -190,10 +193,10 @@ public partial class DefNode : ObservableObject
 
 public class AttributeChangedEventArgs : EventArgs
 {
-    public DefAttributeViewModel Attribute { get; }
-
     public AttributeChangedEventArgs(DefAttributeViewModel attribute)
     {
         Attribute = attribute;
     }
+
+    public DefAttributeViewModel Attribute { get; }
 }

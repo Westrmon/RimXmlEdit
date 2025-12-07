@@ -195,6 +195,13 @@ public partial class MainViewModel : ViewModelBase
         {
             node.IsEditable = false;
             DefTreeNodes.Add(node);
+            if (SelectedSide == "root")
+            {
+                SelectedSide = "child";
+                ChildViewNode = node;
+                DefNode = node;
+                _ = UpdateChildList();
+            }
         }
         else
         {
@@ -232,7 +239,7 @@ public partial class MainViewModel : ViewModelBase
 
     partial void OnDefNodeChanged(DefNode value)
     {
-        if (value != null) UpdateDescription(value.GetFullName('.'));
+        if (value != null) UpdateDescription(value.GetFullName('.', true));
     }
 
     [RelayCommand]
@@ -240,7 +247,7 @@ public partial class MainViewModel : ViewModelBase
     {
         var contextNode = _isAddNodeToRoot ? DefNodeManager.RootNode : DefNode ?? DefNodeManager.RootNode;
         IEnumerable<string>? childs = null;
-        var fullName = string.Empty;
+        string fullName;
 
         _isAddNodeToRoot = false;
         await Task.Run(() =>
@@ -254,7 +261,7 @@ public partial class MainViewModel : ViewModelBase
             }
             else if (!DefNodeManager.IsPatch && SelectedSide == "child")
             {
-                fullName = contextNode.GetFullName();
+                fullName = contextNode.GetFullName(addClasses: true);
                 childs = _nodeInfoManager.GetChildNameOrEnumValues(fullName);
 
                 if (childs != null && contextNode.Children != null)
@@ -387,7 +394,7 @@ public partial class MainViewModel : ViewModelBase
     private void EditDescription()
     {
         CanEditNodeDefine = false;
-        _defDefineInfo.UpdateDefine(_searchDescNodeFullName, CurrentDescription);
+        _defDefineInfo.UpdateDefine(_searchDescNodeFullName, CurrentDescription, false);
     }
 
     [RelayCommand]
@@ -443,7 +450,7 @@ public partial class MainViewModel : ViewModelBase
         if (ChildViewNode == DefNodeManager.RootNode)
             fullName = value;
         else
-            fullName = $"{ChildViewNode.GetFullName('.')}.{value}";
+            fullName = $"{ChildViewNode.GetFullName('.', true)}.{value}";
         UpdateDescription(fullName);
     }
 
